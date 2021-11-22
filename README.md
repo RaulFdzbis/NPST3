@@ -16,7 +16,7 @@ The algorithm can be executed with the `policy_exec_nostyle_incremental.py` scri
 
 The Autoencoder is trained running the script `conv_AE.py` 
 
-The trained model can be executed with `conv_AE_predict.py`. To change the selected model change the path at **TODO**
+The trained model can be executed with `conv_AE_predict.py`.
 
 ## TD3 Network
 
