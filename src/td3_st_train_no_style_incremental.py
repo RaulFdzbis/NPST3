@@ -140,7 +140,7 @@ class CriticTD3(tf.keras.Model):
     self.critic1 = get_critic()
     self.critic2 = get_critic()
 
-  def call(self, input):
+   def call(self, input):
 	# Critic return for a given input
     return self.critic1(input), self.critic2(input)
 
@@ -303,7 +303,7 @@ critic_lr = 0.00001
 actor_lr = 0.000001
 
 # Optimizer for models
-critic_optimizer = tf.keras.optimizers.Adam(critic_lr))
+critic_optimizer = tf.keras.optimizers.Adam(critic_lr)
 actor_optimizer = tf.keras.optimizers.Adam(actor_lr)
 
 # Discount factor and tau
