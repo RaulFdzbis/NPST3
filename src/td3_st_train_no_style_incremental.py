@@ -19,7 +19,7 @@ from env import motion_ST_AE
 from scipy.spatial import distance
 import seaborn as sns
 import pickle
-import IPython
+#import IPython
 import random
 from operator import add
 
