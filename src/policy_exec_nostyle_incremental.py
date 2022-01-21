@@ -14,7 +14,7 @@ from env import motion_ST_AE
 import matplotlib.pyplot as plt
 import os
 from mpl_toolkits.mplot3d import Axes3D
-import IPython
+#import IPython
 import random
 from operator import add
 
@@ -28,7 +28,7 @@ total_episodes = 10
 
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
-actor_model = load_model("./definitive-models/1") # Actor
+actor_model = load_model("./definitive-models/1/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -39,7 +39,7 @@ for file in file_list:
     print("File extracted : ", file)
     with open(os.path.join("./styles", file)) as f:
         f = f.readlines()
-        IPython.embed()
+        #IPython.embed()
         motion_traj = []
         for i in range(np.shape(f)[0]):
             if i == 0:

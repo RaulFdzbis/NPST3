@@ -3,7 +3,7 @@
 #                                 Input Generator
 # ----------------------------------------------------------------------------------------
 import numpy as np
-import IPython
+#import IPython
 
 
 def scale_input(raw_motion, threshold):
