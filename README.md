@@ -25,6 +25,8 @@ The TD3 network is trained with `td3_st_train_no_style_incremental.py`
 ## Dataset
 The dataset is available [here](https://zenodo.org/record/5718543#.YZu-57so9uQ)
 
+In order to use it, download it and save it in the root directory of the repo within a new "dataset" folder.
+
 
 
 
