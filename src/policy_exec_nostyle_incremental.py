@@ -14,16 +14,25 @@ from env import motion_ST_AE
 import matplotlib.pyplot as plt
 import os
 from mpl_toolkits.mplot3d import Axes3D
-#import IPython
+import IPython
 import random
 from operator import add
+import argparse
+
+# Arguments
+parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2: Sad, 3: Angry.')
+parser.add_argument('--style', type=int, default=0)
+args = parser.parse_args()
+
 
 # Parameters
 INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
 
+# Velocity bound
 upper_bound = 0.1 * robot_threshold
 lower_bound = -0.1 * robot_threshold
+
 total_episodes = 10
 
 # Load model
@@ -55,14 +64,14 @@ selected_styles.append(style_data[0][4])  # Happy
 selected_styles.append(style_data[1][0])  # Calm
 selected_styles.append(style_data[2][5])  # Sad
 selected_styles.append(style_data[3][2])  # Angry
-selected_styles = input_processing.scale_input(selected_styles, robot_threshold)  # Scale styles
-style_motion = selected_styles[0]
+selected_styles = input_processing.scale_input(selected_styles, robot_threshold)  # Scale all the styles
+
+# The position [0] is the starting position and we set that position to be zero.
+style_motion = selected_styles[args.style]
 style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
-
-
-# Random straight lines
+# Init Content motion
 content_motion = [[0, 0, 0]]
 
 # env
@@ -81,6 +90,7 @@ def policy(state):
 
 for ep in range(total_episodes):
 
+    ### Init Content motion
     # Select random seed for the generation of the content
     content_seed = [random.uniform(lower_bound/5, upper_bound/5), random.uniform(lower_bound/5, upper_bound/5),
                     random.uniform(lower_bound/5, upper_bound/5)]
@@ -88,19 +98,21 @@ for ep in range(total_episodes):
 
     content_motion = []
 
-    # Generate Content motion
+    # Generate Content motion. It is initialized with 0.
     content_motion.append([0, 0, 0])
     content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
 
-    # Define next step of the content (is one step ahead)
+    # Define next step of the content using the seed (is one step ahead)
     content_motion.append(list(np.clip(list(map(add, content_motion[0], content_seed)),
                                        -robot_threshold, robot_threshold)))
+    
+    # Change the seed?
     if random.random() <0:#< 0.03:
         content_seed = [random.uniform(lower_bound/5, upper_bound/5),
                         random.uniform(lower_bound/5, upper_bound/5),
                         random.uniform(lower_bound/5, upper_bound/5)]
 
-    # Generate env
+    # Init env and generated_motion
     generated_motion = env.reset(content_motion, style_motion)
     episodic_reward = 0
 
@@ -108,7 +120,9 @@ for ep in range(total_episodes):
     done = 0
     print("Episode ", ep)
     end_traj = 0
+    
     while True:
+        # Call the policy using the *last* content motion and generated motion as tensors
         generated_motion_input = input_processing.input_generator(generated_motion, INPUT_SIZE)
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
         content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
