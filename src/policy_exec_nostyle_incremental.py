@@ -33,11 +33,11 @@ robot_threshold = 300  # Absolute max range of robot movements in mm
 upper_bound = 0.1 * robot_threshold
 lower_bound = -0.1 * robot_threshold
 
-total_episodes = 10
+total_episodes = 1
 
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
-actor_model = load_model("./definitive-models/1/actor.h5") # Actor
+actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -144,7 +144,7 @@ for ep in range(total_episodes):
         step += 1
         episodic_reward += reward
 
-        # End episode when break is true
+        # End episode if done true
         if done:
             break
         print("#", end="")
