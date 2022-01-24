@@ -22,6 +22,12 @@ import pickle
 #import IPython
 import random
 from operator import add
+import argparse
+
+# Arguments
+parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2: Sad, 3: Angry.')
+parser.add_argument('--style', type=int, default=0)
+args = parser.parse_args()
 
 # Env parameters
 num_actions = 3  # X,Y,Z
@@ -357,7 +363,9 @@ selected_styles.append(style_data[1][0])  # Calm
 selected_styles.append(style_data[2][5])  # Sad
 selected_styles.append(style_data[3][2])  # Angry
 selected_styles = input_processing.scale_input(selected_styles, robot_threshold) #Scale styles
-style_motion = selected_styles[0]
+
+# Select the Style
+style_motion = selected_styles[args.style]
 style_motion = style_motion - style_motion[0]
 
 # content init
