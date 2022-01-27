@@ -12,7 +12,7 @@ The algorithm can be executed with the `policy_exec_nostyle_incremental.py` scri
 
 ## Installation
 
-You can install this repo running `python setup.py install` within the root of the repo. In case of compatibility issues you can use the `requirements-stable.txt` within `setup.py` for the last tested versions for each package for python 3.7.11.
+You can install this repo running `python setup.py install` within the root of the repo. In case of compatibility issues you can use the `requirements-stable.txt` within `setup.py` for the last tested versions.
 
 ## Autoencoder
 
