@@ -1,0 +1,9 @@
+scipy
+numpy
+six
+pandas
+keras
+tensorflow
+theano
+matplotlib
+seaborn
