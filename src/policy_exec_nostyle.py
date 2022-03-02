@@ -72,7 +72,7 @@ style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
 # Generate Content Motion
-IPython.embed()
+#IPython.embed()
 c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
 c_y=np.linspace(0,200,num=50).reshape(-1,1)
 c_z=np.linspace(0,50,num=50).reshape(-1,1)
@@ -112,9 +112,18 @@ for ep in range(total_episodes):
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
+        if generated_motion[-1][0] <200:
+            action = [0.40816327, 4.08163265, 1.02040816]
+            action = action*2
+        else:
+            action = [0,0,0]
 
         # Receive state and reward from environment.
-        generated_motion, reward, done = env.step(action, content_motion)  # Step outpus a list for generated
+        generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
+        print(cl, sl, vel_loss, pos_loss_cont, pos_loss)
+
+
+        # Step outpus a list for generated
         step += 1
         episodic_reward += reward
 
@@ -128,14 +137,17 @@ for ep in range(total_episodes):
     print("The total reward is", episodic_reward)
     content_motion_array = np.asarray(content_motion)
     generated_motion_array = np.asarray(generated_motion)
+    style_motion_array = np.asarray(style_motion)
 
     # Do some plotting
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
-    ax.set_zticklabels([])
-    for i in range(30):
+    IPython.embed()
+    # To remove labels from axis
+    #ax.set_yticklabels([])
+    #ax.set_xticklabels([])
+    #ax.set_zticklabels([])
+    for i in range(INPUT_SIZE):
         if i < 25:
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], 'b', linewidth=2)
         else:

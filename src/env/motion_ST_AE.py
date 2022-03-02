@@ -108,7 +108,7 @@ class ae_env():
 
         # Position constraint
         pos_loss_cont = np.mean((np.asarray(self.generated_motion[num_points - 1]) / self.robot_threshold - self.content_motion[num_points - 1] / self.robot_threshold) ** 2)
-		
+
 		# End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
            pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
@@ -128,19 +128,19 @@ class ae_env():
         if np.shape(self.generated_motion)[0] == self.input_size:
             print("totals losses are: ", self.tcl, self.tsl, self.tpl, self.tvl)
             print("WARNING: CONT POSS ALSO ADDED IN THIS VERSION")
-        return comp_reward
+        return comp_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss
 
     def step(self, step_action, content_motion):  # Step outpus a list for generated
         self.content_motion = np.asarray(content_motion)
         self.generated_motion.append(list(
             np.clip(list(map(add, self.generated_motion[-1], step_action)), -300, 300)))  # add next step
 
-        step_reward = self.compute_reward()
+        step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss  = self.compute_reward()
 
         if np.shape(self.generated_motion)[0] == self.input_size:
             self.done = 1
 
-        return self.generated_motion, step_reward, self.done
+        return self.generated_motion, step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, self.done
 
 
 if __name__ == "__main__":
