@@ -84,6 +84,13 @@ tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
 # env
 env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
 
+# reward history
+cl_hist=[]
+sl_hist=[]
+vel_hist=[]
+poss_hist=[]
+end_poss_hist=[]
+
 
 def policy(state):
     sampled_actions = tf.squeeze(actor_model(state))
@@ -112,16 +119,21 @@ for ep in range(total_episodes):
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
-        if generated_motion[-1][0] <200:
-            action = [0.40816327, 4.08163265, 1.02040816]
-            action = action*2
+        action_vel=6
+        if generated_motion[-1][1] <200:
+            action = [0.40816327*action_vel, 4.08163265*action_vel, 1.02040816*action_vel]
         else:
             action = [0,0,0]
 
         # Receive state and reward from environment.
         generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
-        print(cl, sl, vel_loss, pos_loss_cont, pos_loss)
+        #print(cl, sl, vel_loss, pos_loss_cont, pos_loss)
 
+        cl_hist.append(cl)
+        sl_hist.append(sl)
+        vel_hist.append(vel_loss)
+        poss_hist.append(pos_loss_cont)
+        end_poss_hist.append(pos_loss)
 
         # Step outpus a list for generated
         step += 1
@@ -140,17 +152,23 @@ for ep in range(total_episodes):
     style_motion_array = np.asarray(style_motion)
 
     # Do some plotting
+
+    # Rewards
+    plt.plot(np.linspace(1, 49, num=49), cl_hist, label="content_loss")
+    plt.plot(np.linspace(1, 49, num=49), sl_hist, label="style_loss")
+    plt.plot(np.linspace(1, 49, num=49), poss_hist, label="poss_loss")
+    plt.plot(np.linspace(1, 49, num=49), end_poss_hist, label="end_poss_loss")
+    plt.legend(loc="upper left")
+    #plt.ylim(0, 0.2)
+    plt.show()
+
+    # Generated trajectory
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    IPython.embed()
     # To remove labels from axis
     #ax.set_yticklabels([])
     #ax.set_xticklabels([])
     #ax.set_zticklabels([])
     for i in range(INPUT_SIZE):
-        if i < 25:
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], 'b', linewidth=2)
-        else:
-            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2],
-                   generated_motion_array[:, 2][i:i + 2], 'r', linewidth=2)
-    plt.show()
+    #plt.show()

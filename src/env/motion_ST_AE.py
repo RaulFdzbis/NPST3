@@ -12,9 +12,9 @@ from utils import input_processing
 from operator import add
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-#import IPython
 import copy
+from dtw import *
+import IPython
 
 
 class ae_env():
@@ -28,11 +28,11 @@ class ae_env():
         self.input_size = input_size
         self.robot_threshold = robot_threshold
         # Style Transfer and constraints weights
-        self.wc = 100
+        self.wc = 10
         self.ws = 1
-        self.wp = 1
+        self.wp = 0.5
         self.wv = 20
-        self.wpc = 0.1
+        self.wpc = 1
         # Debug
         self.tcl = 0
         self.tsl = 0
@@ -107,14 +107,17 @@ class ae_env():
         vel_loss = np.mean((abs(gen_velocity)/self.robot_threshold - abs(style_velocity)/self.robot_threshold) ** 2)
 
         # Position constraint
-        pos_loss_cont = np.mean((np.asarray(self.generated_motion[num_points - 1]) / self.robot_threshold - self.content_motion[num_points - 1] / self.robot_threshold) ** 2)
+        #pos_loss_cont = np.mean((np.asarray(self.generated_motion[num_points - 1]) / self.robot_threshold - self.content_motion[num_points - 1] / self.robot_threshold) ** 2)
 
 		# End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
-           pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
+            alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
+            pos_loss_cont = alignment.distance * (1e-5)
+            pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
 
         else:
            pos_loss = 0
+           pos_loss_cont=0
 
 		# Total reward
         comp_reward = -(self.wc * cl + self.ws * sl + self.wp * pos_loss + self.wv * vel_loss + pos_loss_cont * self.wpc)
@@ -140,7 +143,7 @@ class ae_env():
         if np.shape(self.generated_motion)[0] == self.input_size:
             self.done = 1
 
-        return self.generated_motion, step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, self.done
+        return self.generated_motion, step_reward, self.wc*cl, self.ws*sl, self.wv*vel_loss, self.wpc*pos_loss_cont, self.wp*pos_loss, self.done
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
 import numpy as np
 
 ## A noisy sine wave as query
-idx = np.linspace(0,6.28,num=100)
-query = np.sin(idx) + np.random.uniform(size=100)/10.0
+idx = np.linspace(0,6.28,num=50)
+query = np.sin(idx) + np.random.uniform(size=50)/10.0
 
 ## A cosine is for template; sin and cos are offset by 25 samples
 template = np.cos(idx)
@@ -33,4 +33,12 @@ list_index2 = alignment.index2.tolist()
 dtw(query[list_index1], template[list_index2], keep_internals=True, 
     step_pattern=rabinerJuangStepPattern(6, "c"))\
     .plot(type="twoway",offset=-2)
+    
+# Plot the resulting warped signal
+plt.plot(alignment.index2, query[alignment.index1]) #Query se warpea para igualar los indices de la otra señal. Lo único malo es que no es una función valida. Hay puntos con más de un valor (están warpeados)
+plt.plot(template)
+plt.show()
+
+
+
 
