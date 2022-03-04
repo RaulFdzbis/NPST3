@@ -73,9 +73,31 @@ tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
 # Generate Content Motion
 #IPython.embed()
-c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
-c_y=np.linspace(0,200,num=50).reshape(-1,1)
-c_z=np.linspace(0,50,num=50).reshape(-1,1)
+
+#Simple straight line
+#c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
+#c_y=np.linspace(0,200,num=50).reshape(-1,1)
+#c_z=np.linspace(0,50,num=50).reshape(-1,1)
+
+# Simple pick&place task
+#x
+c_x_0 = np.linspace(10,10,num=15)
+c_x_1 = np.linspace(10,250,num=20)
+c_x_2 = np.linspace(250,250,num=15)
+c_x = np.concatenate((c_x_0, c_x_1, c_x_2)).reshape(-1,1)
+#y
+c_y_0 = np.linspace(10,10,num=15)
+c_y_1 = np.linspace(10,250,num=20)
+c_y_2 = np.linspace(250,250,num=15)
+c_y = np.concatenate((c_y_0, c_y_1, c_y_2)).reshape(-1,1)
+
+#z
+c_z_0 = np.linspace(10,100,num=15)
+c_z_1 = np.linspace(100,200,num=20)
+c_z_2 = np.linspace(200,50,num=15)
+c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
+
+# Full trajectory
 content_motion = c_x
 content_motion = np.append(content_motion, c_y, axis=1)
 content_motion = np.append(content_motion, c_z, axis=1)
@@ -119,11 +141,11 @@ for ep in range(total_episodes):
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
-        action_vel=6
-        if generated_motion[-1][1] <200:
-            action = [0.40816327*action_vel, 4.08163265*action_vel, 1.02040816*action_vel]
-        else:
-            action = [0,0,0]
+        #action_vel=6
+        #if generated_motion[-1][1] <200:
+        #    action = [0.40816327*action_vel, 4.08163265*action_vel, 1.02040816*action_vel]
+        #else:
+        #    action = [0,0,0]
 
         # Receive state and reward from environment.
         generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
@@ -169,6 +191,7 @@ for ep in range(total_episodes):
     #ax.set_yticklabels([])
     #ax.set_xticklabels([])
     #ax.set_zticklabels([])
+    #IPython.embed()
     for i in range(INPUT_SIZE):
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], 'b', linewidth=2)
-    #plt.show()
+    plt.show()
