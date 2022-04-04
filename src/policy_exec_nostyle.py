@@ -182,7 +182,6 @@ for ep in range(total_episodes):
     plt.plot(np.linspace(1, 49, num=49), end_poss_hist, label="end_poss_loss")
     plt.legend(loc="upper left")
     #plt.ylim(0, 0.2)
-    plt.show()
 
     # Generated trajectory
     fig = plt.figure()
@@ -192,6 +191,10 @@ for ep in range(total_episodes):
     #ax.set_xticklabels([])
     #ax.set_zticklabels([])
     #IPython.embed()
+    #Velocity scaled to a maximum of 1m/s
     for i in range(INPUT_SIZE):
-            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], 'b', linewidth=2)
+            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i][1]-generated_motion_array[i-1][0])*255/10)), linewidth=2)
+            print(int(np.linalg.norm(generated_motion_array[i][1]-generated_motion_array[i-1][0])*255/10))
+            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i][1]-generated_motion_array[i-1][0])*255/10)), linewidth=2)
+            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i][1]-generated_motion_array[i-1][0])*255/10)), linewidth=2)
     plt.show()
