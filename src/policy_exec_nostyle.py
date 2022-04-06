@@ -68,7 +68,7 @@ selected_styles = input_processing.scale_input(selected_styles, robot_threshold)
 
 # The position [0] is the starting position and we set that position to be zero.
 style_motion = selected_styles[args.style]
-style_motion = style_motion - style_motion[3]
+style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
 # Generate Content Motion
@@ -180,6 +180,7 @@ for ep in range(total_episodes):
     plt.plot(np.linspace(1, 49, num=49), sl_hist, label="style_loss")
     plt.plot(np.linspace(1, 49, num=49), poss_hist, label="poss_loss")
     plt.plot(np.linspace(1, 49, num=49), end_poss_hist, label="end_poss_loss")
+    plt.plot(np.linspace(1, 49, num=49), vel_hist, label="vel_loss")
     plt.legend(loc="upper left")
     #plt.ylim(0, 0.2)
 
@@ -190,11 +191,13 @@ for ep in range(total_episodes):
     #ax.set_yticklabels([])
     #ax.set_xticklabels([])
     #ax.set_zticklabels([])
-    #IPython.embed()
-    #Velocity scaled to a maximum of 1m/s
-    for i in range(INPUT_SIZE):
+    IPython.embed()
+    #Velocity scaled to a maximum of 0.5m/s
+    for i in range(1,INPUT_SIZE):
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50)), linewidth=2)
-            print(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50))
-            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50)), linewidth=2)
-            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50)), linewidth=2)
+            print(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
+            #print(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
+            #print(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
+            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/50)), linewidth=2)
+            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/50)), linewidth=2)
     plt.show()

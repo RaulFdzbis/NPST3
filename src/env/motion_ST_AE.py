@@ -28,11 +28,11 @@ class ae_env():
         self.input_size = input_size
         self.robot_threshold = robot_threshold
         # Style Transfer and constraints weights
-        self.wc = 10
-        self.ws = 1
-        self.wp = 0.5
-        self.wv = 20
-        self.wpc = 1
+        self.wc = 100
+        self.ws = 0.1
+        self.wp = 5
+        self.wv = 10
+        self.wpc = 10
         # Debug
         self.tcl = 0
         self.tsl = 0
