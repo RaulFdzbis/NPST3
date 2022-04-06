@@ -68,7 +68,7 @@ selected_styles = input_processing.scale_input(selected_styles, robot_threshold)
 
 # The position [0] is the starting position and we set that position to be zero.
 style_motion = selected_styles[args.style]
-style_motion = style_motion - style_motion[0]
+style_motion = style_motion - style_motion[3]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
 # Generate Content Motion
@@ -193,8 +193,8 @@ for ep in range(total_episodes):
     #IPython.embed()
     #Velocity scaled to a maximum of 1m/s
     for i in range(INPUT_SIZE):
-            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i][1]-generated_motion_array[i-1][0])*255/10)), linewidth=2)
-            print(int(np.linalg.norm(generated_motion_array[i][1]-generated_motion_array[i-1][0])*255/10))
-            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i][1]-generated_motion_array[i-1][0])*255/10)), linewidth=2)
-            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i][1]-generated_motion_array[i-1][0])*255/10)), linewidth=2)
+            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50)), linewidth=2)
+            print(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50))
+            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50)), linewidth=2)
+            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50)), linewidth=2)
     plt.show()
