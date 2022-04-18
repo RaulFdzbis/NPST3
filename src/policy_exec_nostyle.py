@@ -48,7 +48,6 @@ for file in file_list:
     print("File extracted : ", file)
     with open(os.path.join("./styles", file)) as f:
         f = f.readlines()
-        #IPython.embed()
         motion_traj = []
         for i in range(np.shape(f)[0]):
             if i == 0:
@@ -72,8 +71,6 @@ style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
 # Generate Content Motion
-#IPython.embed()
-
 #Simple straight line
 #c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
 #c_y=np.linspace(0,200,num=50).reshape(-1,1)
@@ -82,19 +79,19 @@ tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 # Simple pick&place task
 #x
 c_x_0 = np.linspace(10,10,num=15)
-c_x_1 = np.linspace(10,250,num=20)
-c_x_2 = np.linspace(250,250,num=15)
+c_x_1 = np.linspace(10,10,num=20)
+c_x_2 = np.linspace(10,10,num=15)
 c_x = np.concatenate((c_x_0, c_x_1, c_x_2)).reshape(-1,1)
 #y
 c_y_0 = np.linspace(10,10,num=15)
-c_y_1 = np.linspace(10,250,num=20)
-c_y_2 = np.linspace(250,250,num=15)
+c_y_1 = np.linspace(10,200,num=20)
+c_y_2 = np.linspace(200,200,num=15)
 c_y = np.concatenate((c_y_0, c_y_1, c_y_2)).reshape(-1,1)
 
 #z
 c_z_0 = np.linspace(10,100,num=15)
-c_z_1 = np.linspace(100,200,num=20)
-c_z_2 = np.linspace(200,50,num=15)
+c_z_1 = np.linspace(100,100,num=20)
+c_z_2 = np.linspace(100,10,num=15)
 c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
 
 # Full trajectory
@@ -175,7 +172,7 @@ for ep in range(total_episodes):
 
     # Do some plotting
 
-    # Rewards
+    # Losses
     plt.plot(np.linspace(1, 49, num=49), cl_hist, label="content_loss")
     plt.plot(np.linspace(1, 49, num=49), sl_hist, label="style_loss")
     plt.plot(np.linspace(1, 49, num=49), poss_hist, label="poss_loss")
@@ -191,13 +188,13 @@ for ep in range(total_episodes):
     #ax.set_yticklabels([])
     #ax.set_xticklabels([])
     #ax.set_zticklabels([])
-    IPython.embed()
-    #Velocity scaled to a maximum of 0.5m/s
+    #Velocity scaled to a maximum of 0.8m/s
     for i in range(1,INPUT_SIZE):
-            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/50)), linewidth=2)
-            print(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
-            #print(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
-            #print(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
-            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/50)), linewidth=2)
-            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/50)), linewidth=2)
+            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/80)), linewidth=2)
+            print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
+            ##print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
+            print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
+            #print("Velocity loss: ", vel_hist[i-1])
+            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/80)), linewidth=2)
+            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/80)), linewidth=2)
     plt.show()

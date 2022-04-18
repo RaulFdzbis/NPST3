@@ -30,9 +30,9 @@ class ae_env():
         # Style Transfer and constraints weights
         self.wc = 100
         self.ws = 0.1
-        self.wp = 5
-        self.wv = 10
-        self.wpc = 10
+        self.wp = 25
+        self.wv = 50
+        self.wpc = 50
         # Debug
         self.tcl = 0
         self.tsl = 0
@@ -101,10 +101,10 @@ class ae_env():
         sl = self.style_loss(style_outputs, generated_outputs)
 
         # Velocity constraint
-        gen_velocity = np.asarray(self.generated_motion[num_points - 1]) - np.asarray(
-            self.generated_motion[num_points - 2])
-        style_velocity = self.style_motion[num_points - 1] - self.style_motion[num_points - 2]
-        vel_loss = np.mean((abs(gen_velocity)/self.robot_threshold - abs(style_velocity)/self.robot_threshold) ** 2)
+        #gen_velocity = np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2])
+        #style_velocity = self.style_motion[num_points - 1] - self.style_motion[num_points - 2]
+        #vel_loss = np.mean((abs(gen_velocity)/self.robot_threshold - abs(style_velocity)/self.robot_threshold) ** 2)
+        #vel_loss = abs(np.linalg.norm(gen_velocity/self.robot_threshold)-np.linalg.norm(style_velocity/self.robot_threshold)) 
 
         # Position constraint
         #pos_loss_cont = np.mean((np.asarray(self.generated_motion[num_points - 1]) / self.robot_threshold - self.content_motion[num_points - 1] / self.robot_threshold) ** 2)
@@ -114,10 +114,21 @@ class ae_env():
             alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
             pos_loss_cont = alignment.distance * (1e-5)
             pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
+            gen_velocity=0; style_velocity=0
+            for i in range(1,self.input_size):
+                gen_velocity = gen_velocity + np.linalg.norm(np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2]))
+                style_velocity = style_velocity + np.linalg.norm(self.style_motion[num_points - 1] - self.style_motion[num_points - 2])
+            gen_velocity = gen_velocity/self.input_size
+            style_velocity = style_velocity/self.input_size
+            print("gen velocity", gen_velocity)
+            print("style velocity", style_velocity)
+            vel_loss = abs(gen_velocity-style_velocity)/self.robot_threshold
+            
 
         else:
            pos_loss = 0
            pos_loss_cont=0
+           vel_loss = 0
 
 		# Total reward
         comp_reward = -(self.wc * cl + self.ws * sl + self.wp * pos_loss + self.wv * vel_loss + pos_loss_cont * self.wpc)

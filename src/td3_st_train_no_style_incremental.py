@@ -18,7 +18,7 @@ from utils import input_processing
 from env import motion_ST_AE
 from scipy.spatial import distance
 import seaborn as sns
-import pickle
+#import pickle
 #import IPython
 import random
 from operator import add
@@ -30,11 +30,11 @@ parser.add_argument('--style', type=int, default=0)
 args = parser.parse_args()
 
 # Env parameters
-num_actions = 3  # X,Y,Z
+num_actions = 3  # Vx,Vy,Vz
 INPUT_SIZE = 50
-robot_threshold = 300  # in mm
-upper_bound = 0.1*robot_threshold
-lower_bound = -0.1*robot_threshold
+robot_threshold = 300 # in mm
+upper_bound = 80 #Velocity limit is 150mm/s, which is equivalent to a max of ~87mm/s per dimension 
+lower_bound = -80
 total_episodes = 2500
 noise_ep_bound = int(total_episodes * 0.95)
 q_noise = 0.002*robot_threshold
@@ -318,12 +318,13 @@ tau = 0.001
 
 buffer = Buffer(10000, 64)
 
+##### Not used right now #####
 # Load the dataset
-with open('../dataset/NPST3_dataset.pickle', 'rb') as data:
-    marker_data = pickle.load(data)
-
+#with open('../dataset/NPST3_dataset.pickle', 'rb') as data:
+#    marker_data = pickle.load(data)
 # Generate inputs from dataset (arrays)
-train_data, test_data = input_processing.dataset_input_generator(marker_data, INPUT_SIZE, robot_threshold)
+#train_data, test_data = input_processing.dataset_input_generator(marker_data, INPUT_SIZE, robot_threshold)
+##############################
 
 # To store reward history of each episode
 ep_reward_list = []
@@ -370,6 +371,7 @@ style_motion = style_motion - style_motion[0]
 
 # content init
 content_motion = []
+
 # Generate Content motion
 content_motion.append([0, 0, 0])
 
@@ -382,12 +384,41 @@ total_it = 0
 # Start the training
 for ep in range(total_episodes):
     # Select random seed for the generation of the content
-    content_seed = [random.uniform(lower_bound / 5, upper_bound / 5), random.uniform(lower_bound / 5, upper_bound / 5),
-                    random.uniform(lower_bound / 5, upper_bound / 5)]
     content_motion = []
+    content_motion.append([0, 0, 0])
+
+    #First section "pick"
+    pick_z_vel = 10; num_pick_points = 10
+    current_point = content_motion[0]
+    for i in range(num_pick_points):
+        current_point = current_point[2]+pick_z_vel
+        content_motion.append(current_point)
+
+    #Second section "move"
+    num_move_points = 30;
+
+    # Compute distances for x,y,z
+    dx=np.clip(np.random.normal(150,100),0,robot_threshold)
+    y_max=robot_threshold**2-dx**2
+    dy=np.clip(np.random.normal(y_max,100),0,y_max)
+    dz=robot_threshold**2-dx**2-dy**2
+
+    # Compute x,y,z
+    x = dx if random.random() < 0.5 else -dx
+    y = dy if random.random() < 0.5 else -dy
+    z = dz #No negative z
+
+    # Generate move section
+    for i in range(num_move_points):
+        current_point = current_point[0] + x / num_move_points
+        current_point = current_point[1] + y / num_move_points
+        current_point = current_point[2] + z / num_move_points
+        content_motion.append(current_point)
+
+
 
     # Generate Content motion
-    content_motion.append([0,0,0])
+
     content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
 
     # Define next step of the content (is one step ahead)
