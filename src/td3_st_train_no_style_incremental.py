@@ -390,8 +390,9 @@ for ep in range(total_episodes):
     #First section "pick"
     pick_z_vel = 10; num_pick_points = 10
     current_point = content_motion[0]
+    # IPython.embed()
     for i in range(num_pick_points):
-        current_point = current_point[2]+pick_z_vel
+        current_point[2] = current_point[2]+pick_z_vel
         content_motion.append(current_point)
 
     #Second section "move"
@@ -410,9 +411,9 @@ for ep in range(total_episodes):
 
     # Generate move section
     for i in range(num_move_points):
-        current_point = current_point[0] + x / num_move_points
-        current_point = current_point[1] + y / num_move_points
-        current_point = current_point[2] + z / num_move_points
+        current_point[0] = current_point[0] + x / num_move_points
+        current_point[1] = current_point[1] + y / num_move_points
+        current_point[2] = current_point[2] + z / num_move_points
         content_motion.append(current_point)
 
 
@@ -420,14 +421,6 @@ for ep in range(total_episodes):
     # Generate Content motion
 
     content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
-
-    # Define next step of the content (is one step ahead)
-    content_motion.append(list(np.clip(list(map(add, content_motion[0], content_seed)),
-                                       -robot_threshold, robot_threshold)))
-    if random.random() < 0.02:
-        content_seed = [random.uniform(lower_bound / 5, upper_bound / 5),
-                        random.uniform(lower_bound / 5, upper_bound / 5),
-                        random.uniform(lower_bound / 5, upper_bound / 5)]
 
     # Generate env
     generated_motion = env.reset(content_motion, style_motion)
@@ -460,16 +453,8 @@ for ep in range(total_episodes):
             action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound),
                       random.uniform(lower_bound, upper_bound)]
 
-        # Define next step of the content
-        if np.shape(content_motion)[0] < INPUT_SIZE:
-            content_motion.append(list(np.clip(list(map(add, content_motion[step], content_seed)),
-                                          -robot_threshold, robot_threshold)))
-        if random.random() < 0.02:
-            content_seed = [random.uniform(lower_bound/5, upper_bound/5), random.uniform(lower_bound/5, upper_bound/5),
-                      random.uniform(lower_bound/5, upper_bound/5)]
-
         # Recieve state and reward from environment.
-        generated_motion, reward, done = env.step(action, content_motion)  # Step outputs a list for generated
+        generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)  # Step outputs a list for generated
 
         # Generate state
         generated_motion_input = input_processing.input_generator(generated_motion, INPUT_SIZE)
