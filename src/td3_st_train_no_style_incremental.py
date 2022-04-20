@@ -19,10 +19,11 @@ from env import motion_ST_AE
 from scipy.spatial import distance
 import seaborn as sns
 #import pickle
-#import IPython
+import IPython
 import random
 from operator import add
 import argparse
+import copy
 
 # Arguments
 parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2: Sad, 3: Angry.')
@@ -389,10 +390,10 @@ for ep in range(total_episodes):
 
     #First section "pick"
     pick_z_vel = 10; num_pick_points = 10
-    current_point = content_motion[0]
+    current_point = copy.deepcopy(content_motion[0])
     # IPython.embed()
     for i in range(num_pick_points):
-        current_point[2] = current_point[2]+pick_z_vel
+        current_point[2] = copy.deepcopy(current_point[2]+pick_z_vel)
         content_motion.append(current_point)
 
     #Second section "move"
@@ -411,10 +412,13 @@ for ep in range(total_episodes):
 
     # Generate move section
     for i in range(num_move_points):
-        current_point[0] = current_point[0] + x / num_move_points
-        current_point[1] = current_point[1] + y / num_move_points
-        current_point[2] = current_point[2] + z / num_move_points
+        current_point[0] = copy.deepcopy(current_point[0] + x / num_move_points)
+        current_point[1] = copy.deepcopy(current_point[1] + y / num_move_points)
+        current_point[2] = copy.deepcopy(current_point[2] + z / num_move_points)
         content_motion.append(current_point)
+
+    # Third section "place"
+
 
 
 
@@ -473,6 +477,7 @@ for ep in range(total_episodes):
             break
 
         ########################### PARAMS FOR TRAINING TUNING ###########################
+        IPython.embed()
         true_action = [content_motion[step][0] - content_motion[step - 1][0],
                   content_motion[step][1] - content_motion[step - 1][1],
                   content_motion[step][2] - content_motion[step - 1][2]]
