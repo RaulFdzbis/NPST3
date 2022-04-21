@@ -36,7 +36,7 @@ INPUT_SIZE = 50
 robot_threshold = 300 # in mm
 upper_bound = 80 #Velocity limit is 150mm/s, which is equivalent to a max of ~87mm/s per dimension 
 lower_bound = -80
-total_episodes = 2500
+total_episodes = 100 #2500
 noise_ep_bound = int(total_episodes * 0.95)
 q_noise = 0.002*robot_threshold
 action_noise = 0.02*robot_threshold
@@ -383,27 +383,29 @@ env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
 total_it = 0
 
 # Start the training
+fig = plt.figure()
+ax = fig.gca(projection='3d')
 for ep in range(total_episodes):
     # Select random seed for the generation of the content
     content_motion = []
     content_motion.append([0, 0, 0])
 
     #First section "pick"
-    pick_z_vel = 10; num_pick_points = 10
+    pick_z_vel = 10; num_pick_points = 9
     current_point = copy.deepcopy(content_motion[0])
     # IPython.embed()
     for i in range(num_pick_points):
-        current_point[2] = copy.deepcopy(current_point[2]+pick_z_vel)
-        content_motion.append(current_point)
+        current_point[2] = current_point[2]+pick_z_vel
+        content_motion.append(copy.deepcopy(current_point))
 
     #Second section "move"
     num_move_points = 30;
 
     # Compute distances for x,y,z
     dx=np.clip(np.random.normal(150,100),0,robot_threshold)
-    y_max=robot_threshold**2-dx**2
+    y_max=np.sqrt(robot_threshold**2-dx**2)
     dy=np.clip(np.random.normal(y_max,100),0,y_max)
-    dz=robot_threshold**2-dx**2-dy**2
+    dz=np.sqrt(robot_threshold**2-dx**2-dy**2)
 
     # Compute x,y,z
     x = dx if random.random() < 0.5 else -dx
@@ -412,16 +414,28 @@ for ep in range(total_episodes):
 
     # Generate move section
     for i in range(num_move_points):
-        current_point[0] = copy.deepcopy(current_point[0] + x / num_move_points)
-        current_point[1] = copy.deepcopy(current_point[1] + y / num_move_points)
-        current_point[2] = copy.deepcopy(current_point[2] + z / num_move_points)
-        content_motion.append(current_point)
+        current_point[0] = current_point[0] + x / num_move_points
+        current_point[1] = current_point[1] + y / num_move_points
+        current_point[2] = current_point[2] + z / num_move_points
+        content_motion.append(copy.deepcopy(current_point))
 
     # Third section "place"
+    place_z_vel = 10; num_place_points = 10
+
+    for i in range(num_pick_points):
+        current_point[2] = current_point[2] - place_z_vel
+        content_motion.append(copy.deepcopy(current_point))
+
+    ax.plot([row[0] for row in content_motion], [row[1] for row in content_motion], [row[2] for row in content_motion])
+
+    continue
+
+plt.show()
 
 
 
-
+# Delete this while only added to not give error
+while(False):
     # Generate Content motion
 
     content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
