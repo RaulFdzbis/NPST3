@@ -6,8 +6,6 @@
 from keras.layers import Input, Conv1D, MaxPooling1D, UpSampling1D, Dropout
 from keras.models import Model
 from keras.optimizers import Adam
-from keras import backend as K
-import numpy as np
 from keras.callbacks import TensorBoard
 import pickle
 import sys
