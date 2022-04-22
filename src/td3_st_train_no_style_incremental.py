@@ -328,8 +328,23 @@ buffer = Buffer(10000, 64)
 ##############################
 
 # To store reward history of each episode
+
+# Reward and losses in each episode
 ep_reward_list = []
+ep_cl_list = []
+ep_sl_list = []
+ep_vel_loss_list = []
+ep_pos_loss_list = []
+ep_pos_loss_cont_list = []
+# Full history of reward and losses avg each n episodes
 avg_reward_list = []
+avg_cl_list = []
+avg_sl_list = []
+avg_vel_loss_list = []
+avg_pos_loss_list = []
+avg_pos_loss_cont_list = []
+
+# Other historical values
 hist_value = []
 hist_target_value = []
 hist_action = []
@@ -389,7 +404,7 @@ for ep in range(total_episodes):
     content_motion.append([0, 0, 0])
 
     #First section "pick"
-    pick_z_vel = 10; num_pick_points = 9
+    pick_z_vel = 10; num_pick_points = 10
     current_point = copy.deepcopy(content_motion[0])
     # IPython.embed()
     for i in range(num_pick_points):
@@ -432,7 +447,6 @@ for ep in range(total_episodes):
         content_motion.append(copy.deepcopy(current_point))
 
     # Generate Content motion
-
     content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
 
     # Generate env
@@ -440,7 +454,6 @@ for ep in range(total_episodes):
     generated_motion_input = input_processing.input_generator(generated_motion, INPUT_SIZE)
     start_state = [content_motion_input, generated_motion_input]
     prev_state = start_state
-    episodic_reward = 0
 
     step = 1
     done = 0
@@ -453,6 +466,12 @@ for ep in range(total_episodes):
     ep_grad_critic = []
     ep_grad_actor = []
     ep_value_error = []
+    episodic_reward = 0
+    episodic_cl = 0
+    episodic_sl = 0
+    episodic_vl = 0
+    episodic_pos_loss = 0
+    episodic_pos_loss_cont = 0
     while True:
         # Get action from critic
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
@@ -475,6 +494,12 @@ for ep in range(total_episodes):
         state = [content_motion_input, generated_motion_input]
         buffer.record((prev_state, action, reward, state, done))
         episodic_reward += reward
+        episodic_cl += cl
+        episodic_sl = sl
+        episodic_vl = vel_loss
+        episodic_pos_loss_cont = pos_loss_cont
+        episodic_pos_loss = pos_loss
+
 
         # if ep > 1:  # First two episodes only for exploring
         buffer.learn(total_it)
@@ -485,12 +510,10 @@ for ep in range(total_episodes):
         if done:
             break
 
-        ########################### PARAMS FOR TRAINING TUNING ###########################
-        IPython.embed()
+        ########################### DEBUG: PARAMS FOR TRAINING TUNING ###########################
         true_action = [content_motion[step][0] - content_motion[step - 1][0],
                   content_motion[step][1] - content_motion[step - 1][1],
                   content_motion[step][2] - content_motion[step - 1][2]]
-
         true_action = tf.expand_dims(tf.convert_to_tensor(true_action), 0)
 
         action = tf.expand_dims(tf.convert_to_tensor(action), 0)
@@ -519,11 +542,23 @@ for ep in range(total_episodes):
     hist_value_error.append(np.mean(ep_value_error))
 
     ep_reward_list.append(episodic_reward)
+    ep_cl_list.append(episodic_cl)
+    ep_sl_list.append(episodic_sl)
+    ep_vel_loss_list.append(episodic_vl)
+    ep_pos_loss_list.append(episodic_pos_loss_cont)
+    ep_pos_loss_cont_list.append(episodic_pos_loss)
 
-    # Mean of last 40 episodes
-    avg_reward = np.mean(ep_reward_list[-40:])
-    print("Avg Reward is ==> {} * Last reward is {}".format(avg_reward, episodic_reward))
-    avg_reward_list.append(avg_reward)
+    # Mean of last 40 episodes for the reward and the losses
+    NUM_AVG_EP = 40
+    avg_hist = np.mean(ep_reward_list[-NUM_AVG_EP:])
+    print("Avg Reward is ==> {} * Last reward is {}".format(avg_hist, episodic_reward))
+    avg_reward_list.append(avg_hist)
+    avg_cl_list.append(np.mean(ep_cl_list[-NUM_AVG_EP:]))
+    avg_sl_list.append(np.mean(ep_sl_list[-NUM_AVG_EP:]))
+    avg_vel_loss_list.append(np.mean(ep_vel_loss_list[-NUM_AVG_EP:]))
+    avg_pos_loss_list.append(np.mean(ep_pos_loss_list[-NUM_AVG_EP:]))
+    avg_pos_loss_cont_list.append(np.mean(ep_pos_loss_cont_list[-NUM_AVG_EP:]))
+
 
     if ep % 100 == 0:
         # Save the weights
@@ -570,6 +605,36 @@ plt.plot(avg_reward_list)
 plt.xlabel("Episode")
 plt.ylabel("Avg. Epsiodic Reward")
 plt.savefig("avg-reward.png")
+plt.clf()
+
+plt.plot(avg_cl_list)
+plt.xlabel("Episode")
+plt.ylabel("Avg. Content Loss")
+plt.savefig("avg-cl.png")
+plt.clf()
+
+plt.plot(avg_sl_list)
+plt.xlabel("Episode")
+plt.ylabel("Avg. Style Loss")
+plt.savefig("avg-sl.png")
+plt.clf()
+
+plt.plot(avg_vel_loss_list)
+plt.xlabel("Episode")
+plt.ylabel("Avg. Velocity Loss")
+plt.savefig("avg-vel-loss.png")
+plt.clf()
+
+plt.plot(avg_pos_loss_list)
+plt.xlabel("Episode")
+plt.ylabel("Avg. Final Position Loss")
+plt.savefig("avg-final-pos-loss.png")
+plt.clf()
+
+plt.plot(avg_pos_loss_cont_list)
+plt.xlabel("Episode")
+plt.ylabel("Avg. DTW Position Loss")
+plt.savefig("avg-dtw-position-loss.png")
 plt.clf()
 
 plt.plot(hist_actor_loss)
