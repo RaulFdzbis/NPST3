@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 # ----------------------------------------------------------------------------------------
 #                       Neural Policy Style Transfer TD3 (NPST3) 
 #                              Training the TD3 network
@@ -36,7 +35,7 @@ INPUT_SIZE = 50
 robot_threshold = 300 # in mm
 upper_bound = 80 #Velocity limit is 150mm/s, which is equivalent to a max of ~87mm/s per dimension 
 lower_bound = -80
-total_episodes = 100 #2500
+total_episodes = 2500
 noise_ep_bound = int(total_episodes * 0.95)
 q_noise = 0.002*robot_threshold
 action_noise = 0.02*robot_threshold
@@ -404,7 +403,7 @@ for ep in range(total_episodes):
     content_motion.append([0, 0, 0])
 
     #First section "pick"
-    pick_z_vel = 10; num_pick_points = 10
+    pick_z_vel = 10; num_pick_points = 9
     current_point = copy.deepcopy(content_motion[0])
     # IPython.embed()
     for i in range(num_pick_points):
@@ -418,13 +417,9 @@ for ep in range(total_episodes):
     var=100
     dx=np.clip(np.random.normal(150,var),0,robot_threshold)
     y_max=np.sqrt(max(0,robot_threshold**2-dx**2))
-    #print("Y_max sqrt", max(0,robot_threshold**2-dx**2))
     dy=np.clip(np.random.normal(y_max,var),0,y_max)
     z_max=np.sqrt(max(0,robot_threshold**2-dx**2-dy**2))
-    #print("Z_max sqrt", max(0,robot_threshold**2-dx**2-dy**2))
-    #print("z_max", z_max)
     dz = np.clip(np.random.normal(0, var), 0, z_max)
-    #print("dz", dz)
 
 
     # Compute x,y,z
@@ -442,7 +437,7 @@ for ep in range(total_episodes):
     # Third section "place"
     place_z_vel = 10; num_place_points = 10
 
-    for i in range(num_pick_points):
+    for i in range(num_place_points):
         current_point[2] = current_point[2] - place_z_vel
         content_motion.append(copy.deepcopy(current_point))
 
