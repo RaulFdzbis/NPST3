@@ -383,8 +383,6 @@ env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
 total_it = 0
 
 # Start the training
-fig = plt.figure()
-ax = fig.gca(projection='3d')
 for ep in range(total_episodes):
     # Select random seed for the generation of the content
     content_motion = []
@@ -402,10 +400,17 @@ for ep in range(total_episodes):
     num_move_points = 30;
 
     # Compute distances for x,y,z
-    dx=np.clip(np.random.normal(150,100),0,robot_threshold)
-    y_max=np.sqrt(robot_threshold**2-dx**2)
-    dy=np.clip(np.random.normal(y_max,100),0,y_max)
-    dz=np.sqrt(robot_threshold**2-dx**2-dy**2)
+    var=100
+    dx=np.clip(np.random.normal(150,var),0,robot_threshold)
+    y_max=np.sqrt(max(0,robot_threshold**2-dx**2))
+    #print("Y_max sqrt", max(0,robot_threshold**2-dx**2))
+    dy=np.clip(np.random.normal(y_max,var),0,y_max)
+    z_max=np.sqrt(max(0,robot_threshold**2-dx**2-dy**2))
+    #print("Z_max sqrt", max(0,robot_threshold**2-dx**2-dy**2))
+    #print("z_max", z_max)
+    dz = np.clip(np.random.normal(0, var), 0, z_max)
+    #print("dz", dz)
+
 
     # Compute x,y,z
     x = dx if random.random() < 0.5 else -dx
@@ -426,16 +431,6 @@ for ep in range(total_episodes):
         current_point[2] = current_point[2] - place_z_vel
         content_motion.append(copy.deepcopy(current_point))
 
-    ax.plot([row[0] for row in content_motion], [row[1] for row in content_motion], [row[2] for row in content_motion])
-
-    continue
-
-plt.show()
-
-
-
-# Delete this while only added to not give error
-while(False):
     # Generate Content motion
 
     content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
