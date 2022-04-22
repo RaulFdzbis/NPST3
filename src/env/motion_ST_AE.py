@@ -81,20 +81,18 @@ class ae_env():
     def compute_reward(self):
         # Generated motion outputs for both cl and sl
         num_points = np.shape(self.generated_motion)[0]
-        input_motion = input_processing.input_generator(self.generated_motion,
+        input_generated_motion = input_processing.input_generator(self.generated_motion,
                                                         self.input_size)  # generated_motion to NN friendly array for input
 
-        # Obtain the corresponding content and style vectors 
-        eq_content_motion = input_processing.input_generator(self.content_motion[0:num_points], self.input_size)
-        eq_style_motion = input_processing.input_generator(self.style_motion[0:num_points], self.input_size)
+        IPython.embed()
 		
 		# Content and Style outputs
-        content_outputs = self.ae_outputs([np.expand_dims(eq_content_motion, axis=0)])
-        style_outputs = self.ae_outputs([np.expand_dims(eq_style_motion, axis=0)])
+        content_outputs = self.ae_outputs([np.expand_dims(self.content_motion, axis=0)])
+        style_outputs = self.ae_outputs([np.expand_dims(self.style_motion, axis=0)])
 
 		# Generated outputs
-        input_motion = np.expand_dims(input_motion, axis=0)
-        generated_outputs = self.ae_outputs([input_motion])
+        input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
+        generated_outputs = self.ae_outputs([input_generated_motion])
 
 		# Compute losses
         cl = self.content_loss(content_outputs, generated_outputs)
@@ -139,9 +137,9 @@ class ae_env():
         self.tpl += pos_loss * self.wp
         self.tvl += vel_loss * self.wv
 
-        if np.shape(self.generated_motion)[0] == self.input_size:
-            print("totals losses are: ", self.tcl, self.tsl, self.tpl, self.tvl)
-            print("WARNING: CONT POSS ALSO ADDED IN THIS VERSION")
+        #if np.shape(self.generated_motion)[0] == self.input_size:
+        #    print("totals losses are: ", self.tcl, self.tsl, self.tpl, self.tvl)
+        #    print("WARNING: CONT POSS ALSO ADDED IN THIS VERSION")
         return comp_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss
 
     def step(self, step_action, content_motion):  # Step outpus a list for generated
