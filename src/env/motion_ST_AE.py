@@ -84,7 +84,7 @@ class ae_env():
         input_generated_motion = input_processing.input_generator(self.generated_motion,
                                                         self.input_size)  # generated_motion to NN friendly array for input
 
-        IPython.embed()
+        #IPython.embed()
 		
 		# Content and Style outputs
         content_outputs = self.ae_outputs([np.expand_dims(self.content_motion, axis=0)])
@@ -118,8 +118,8 @@ class ae_env():
                 style_velocity = style_velocity + np.linalg.norm(self.style_motion[num_points - 1] - self.style_motion[num_points - 2])
             gen_velocity = gen_velocity/self.input_size
             style_velocity = style_velocity/self.input_size
-            print("gen velocity", gen_velocity)
-            print("style velocity", style_velocity)
+            #print("gen velocity", gen_velocity)
+            #print("style velocity", style_velocity)
             vel_loss = abs(gen_velocity-style_velocity)/self.robot_threshold
             
 
