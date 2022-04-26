@@ -5,7 +5,6 @@
 # TD3 algorithm implemented with the help of [amifunny](https://github.com/amifunny) code 
 # ----------------------------------------------------------------------------------------
 
-# Setup used for the results obtained 26-04-22
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
