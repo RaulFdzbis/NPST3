@@ -30,9 +30,9 @@ class ae_env():
         # Style Transfer and constraints weights
         self.wc = 100
         self.ws = 0.1
-        self.wp = 25
+        self.wp = 100
         self.wv = 50
-        self.wpc = 50
+        self.wpc = 200
         # Debug
         self.tcl = 0
         self.tsl = 0
