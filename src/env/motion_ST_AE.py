@@ -28,11 +28,12 @@ class ae_env():
         self.input_size = input_size
         self.robot_threshold = robot_threshold
         # Style Transfer and constraints weights
-        self.wc = 100
-        self.ws = 0.1
+        self.wc = 2
+        self.ws = 0.02
         self.wp = 100
         self.wv = 50
-        self.wpc = 200
+        self.wpc = 4
+
         # Debug
         self.tcl = 0
         self.tsl = 0
@@ -98,6 +99,10 @@ class ae_env():
         cl = self.content_loss(content_outputs, generated_outputs)
         sl = self.style_loss(style_outputs, generated_outputs)
 
+        alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
+        pos_loss_cont = alignment.distance * (1e-5)
+
+
         # Velocity constraint
         #gen_velocity = np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2])
         #style_velocity = self.style_motion[num_points - 1] - self.style_motion[num_points - 2]
@@ -109,8 +114,6 @@ class ae_env():
 
 		# End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
-            alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
-            pos_loss_cont = alignment.distance * (1e-5)
             pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
             gen_velocity=0; style_velocity=0
             for i in range(1,self.input_size):
@@ -125,11 +128,13 @@ class ae_env():
 
         else:
            pos_loss = 0
-           pos_loss_cont=0
            vel_loss = 0
 
+        # Time step
+        n_timestep = np.shape(self.generated_motion)[0]
+
 		# Total reward
-        comp_reward = -(self.wc * cl + self.ws * sl + self.wp * pos_loss + self.wv * vel_loss + pos_loss_cont * self.wpc)
+        comp_reward = -(self.wc * n_timestep * cl + self.ws * n_timestep * sl + self.wp * pos_loss + self.wv * vel_loss + pos_loss_cont * n_timestep * self.wpc)
 
 		# Debug for training
         self.tcl += cl * self.wc
