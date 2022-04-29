@@ -22,17 +22,24 @@ class ae_env():
         # Init the desired motions
         self.content_motion = np.asarray(content_motion)
         self.style_motion = np.asarray(style_motion)
+        self.input_size = input_size
+
+        # Compute avg style velocity
+        self.style_velocity = 0
+        for i in range(1, input_size):
+            self.style_velocity = self.style_velocity + np.linalg.norm(self.style_motion[i - 1] - self.style_motion[i])
+        self.style_velocity = self.style_velocity / input_size
+
         self.generated_motion = []
         self.generated_motion.append(list(content_motion[0]))  # Init position
         self.done = 0
-        self.input_size = input_size
         self.robot_threshold = robot_threshold
         # Style Transfer and constraints weights
         self.wc = 2
         self.ws = 0.02
         self.wp = 100
-        self.wv = 50
-        self.wpc = 4
+        self.wv = 0.1
+        self.wpc = 1
 
         # Debug
         self.tcl = 0
@@ -96,12 +103,31 @@ class ae_env():
         generated_outputs = self.ae_outputs([input_generated_motion])
 
 		# Compute losses
+
+        # cl and sl
         cl = self.content_loss(content_outputs, generated_outputs)
         sl = self.style_loss(style_outputs, generated_outputs)
 
+        # dtw
         alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
         pos_loss_cont = alignment.distance * (1e-5)
 
+        # Velocity
+        gen_velocity = 0; gen_points = 0;
+        for i in range(1, self.input_size):
+            if np.linalg.norm(np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2])) != 0:  # If stopped not taken in account to compute avg vel
+                gen_velocity = gen_velocity + np.linalg.norm(np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2]))
+                gen_points += 1
+
+        if gen_points != 0:
+            gen_velocity = gen_velocity / gen_points
+        # print("gen velocity", gen_velocity)
+        # print("style velocity", style_velocity)
+        vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
+
+        #print("Velocity loss is:", vel_loss)
+        #print("DTW loss is:", pos_loss_cont)
+        #time.sleep(3)
 
         # Velocity constraint
         #gen_velocity = np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2])
@@ -115,26 +141,18 @@ class ae_env():
 		# End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
             pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
-            gen_velocity=0; style_velocity=0
-            for i in range(1,self.input_size):
-                gen_velocity = gen_velocity + np.linalg.norm(np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2]))
-                style_velocity = style_velocity + np.linalg.norm(self.style_motion[num_points - 1] - self.style_motion[num_points - 2])
-            gen_velocity = gen_velocity/self.input_size
-            style_velocity = style_velocity/self.input_size
-            #print("gen velocity", gen_velocity)
-            #print("style velocity", style_velocity)
-            vel_loss = abs(gen_velocity-style_velocity)/self.robot_threshold
-            
-
         else:
            pos_loss = 0
-           vel_loss = 0
 
         # Time step
-        n_timestep = np.shape(self.generated_motion)[0]
+        n_timestep = num_points
 
 		# Total reward
-        comp_reward = -(self.wc * n_timestep * cl + self.ws * n_timestep * sl + self.wp * pos_loss + self.wv * vel_loss + pos_loss_cont * n_timestep * self.wpc)
+        comp_reward = -(self.wc * n_timestep * cl + self.ws * n_timestep * sl + self.wp * pos_loss + self.wv * n_timestep * vel_loss + pos_loss_cont * n_timestep * self.wpc)
+        #print("Velocity reward is: ", self.wv * n_timestep * vel_loss)
+        #print("Content reward is: ", self.wc * n_timestep * cl)
+        #print("Style reward is: ", self.ws * n_timestep * sl)
+        #print("DTW reward is: ", pos_loss_cont * n_timestep * self.wpc)
 
 		# Debug for training
         self.tcl += cl * self.wc

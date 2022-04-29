@@ -37,7 +37,8 @@ total_episodes = 1
 
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
-actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
+#actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/29-04-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -138,11 +139,6 @@ for ep in range(total_episodes):
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
-        #action_vel=6
-        #if generated_motion[-1][1] <200:
-        #    action = [0.40816327*action_vel, 4.08163265*action_vel, 1.02040816*action_vel]
-        #else:
-        #    action = [0,0,0]
 
         # Receive state and reward from environment.
         generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
