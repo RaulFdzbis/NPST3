@@ -39,7 +39,7 @@ class ae_env():
         self.ws = 0.02
         self.wp = 100
         self.wv = 0.1
-        self.wpc = 1
+        self.wpc = 0.1
 
         # Debug
         self.tcl = 0
@@ -163,7 +163,7 @@ class ae_env():
         #if np.shape(self.generated_motion)[0] == self.input_size:
         #    print("totals losses are: ", self.tcl, self.tsl, self.tpl, self.tvl)
         #    print("WARNING: CONT POSS ALSO ADDED IN THIS VERSION")
-        return comp_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss
+        return comp_reward, self.wc * n_timestep * cl, self.ws * n_timestep * sl, self.wv * n_timestep * vel_loss, n_timestep * self.wpc * pos_loss_cont, self.wp * pos_loss
 
     def step(self, step_action, content_motion):  # Step outpus a list for generated
         self.content_motion = np.asarray(content_motion)
@@ -175,7 +175,7 @@ class ae_env():
         if np.shape(self.generated_motion)[0] == self.input_size:
             self.done = 1
 
-        return self.generated_motion, step_reward, self.wc*cl, self.ws*sl, self.wv*vel_loss, self.wpc*pos_loss_cont, self.wp*pos_loss, self.done
+        return self.generated_motion, step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, self.done
 
 
 if __name__ == "__main__":

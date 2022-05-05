@@ -38,7 +38,7 @@ total_episodes = 1
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 #actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/29-04-22/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/05-05-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -95,6 +95,25 @@ c_z_1 = np.linspace(100,100,num=20)
 c_z_2 = np.linspace(100,10,num=15)
 c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
 
+# Generated test
+#x
+g_x_0 = np.linspace(10,10,num=15)
+g_x_1 = np.linspace(10,10,num=20)
+g_x_2 = np.linspace(10,10,num=15)
+g_x = np.concatenate((c_x_0, c_x_1, c_x_2)).reshape(-1,1)
+#y
+g_y_0 = np.linspace(10,10,num=15)
+g_y_1 = np.linspace(10,200,num=20)
+g_y_2 = np.linspace(200,200,num=15)
+g_y = np.concatenate((c_y_0, c_y_1, c_y_2)).reshape(-1,1)
+
+#z
+g_z_0 = np.linspace(10,100,num=15)
+g_z_1 = np.linspace(100,100,num=20)
+g_z_2 = np.linspace(100,10,num=15)
+g_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
+
+
 # Full trajectory
 content_motion = c_x
 content_motion = np.append(content_motion, c_y, axis=1)
@@ -139,6 +158,13 @@ for ep in range(total_episodes):
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
+        
+        # Hard coded action
+        escala = 2
+        if step*escala<INPUT_SIZE:
+        	action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
+        else:
+        	action = [0,0,0]
 
         # Receive state and reward from environment.
         generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
@@ -161,7 +187,13 @@ for ep in range(total_episodes):
         sys.stdout.flush()
 
     print("/")
-    print("The total reward is", episodic_reward)
+    print("The total loss is", episodic_reward)
+    print("The CL loss is:", np.sum(cl_hist))
+    print("The SL loss is:", np.sum(sl_hist))
+    print("The Vel loss is:", np.sum(vel_hist))
+    print("The Poss loss is:", np.sum(poss_hist))
+    print("The EndPoss loss is:", np.sum(end_poss_hist))
+    
     content_motion_array = np.asarray(content_motion)
     generated_motion_array = np.asarray(generated_motion)
     style_motion_array = np.asarray(style_motion)
@@ -187,10 +219,10 @@ for ep in range(total_episodes):
     #Velocity scaled to a maximum of 0.8m/s
     for i in range(1,INPUT_SIZE):
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/80)), linewidth=2)
-            print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
+            #print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
             ##print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
-            print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
+            #print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
             #print("Velocity loss: ", vel_hist[i-1])
-            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/80)), linewidth=2)
+            #ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/80)), linewidth=2)
             ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/80)), linewidth=2)
     plt.show()
