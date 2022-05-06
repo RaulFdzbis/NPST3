@@ -71,6 +71,7 @@ style_motion = selected_styles[args.style]
 style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
+
 # Generate Content Motion
 #Simple straight line
 #c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
@@ -160,15 +161,18 @@ for ep in range(total_episodes):
         action = policy(tf_prev_state)
         
         # Hard coded action
-        escala = 2
+        escala = 1
         if step*escala<INPUT_SIZE:
         	action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
+        	#action = style_motion[step*escala]-style_motion[(step-1)*escala]
         else:
         	action = [0,0,0]
-
+        	
+        
         # Receive state and reward from environment.
         generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
         #print(cl, sl, vel_loss, pos_loss_cont, pos_loss)
+        
 
         cl_hist.append(cl)
         sl_hist.append(sl)

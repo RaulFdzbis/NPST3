@@ -50,10 +50,17 @@ class ae_env():
         # Load AE model
         self.autoencoder = load_model(ae_path)  # Actor
         self.ae_outputs = K.function([self.autoencoder.input], [self.autoencoder.layers[2].output])
+        # Content and Style outputs
+        self.content_outputs = self.ae_outputs([np.expand_dims(self.content_motion, axis=0)])
+        self.style_outputs = self.ae_outputs([np.expand_dims(self.style_motion, axis=0)])
 
     def reset(self, content_motion, style_motion):
         self.content_motion = np.asarray(content_motion)
         self.style_motion = np.asarray(style_motion)
+        # Content and Style outputs
+        self.content_outputs = self.ae_outputs([np.expand_dims(self.content_motion, axis=0)])
+        self.style_outputs = self.ae_outputs([np.expand_dims(self.style_motion, axis=0)])
+        
         self.generated_motion = []
         self.generated_motion.append(content_motion[0])  # Init position
         self.done = 0
@@ -67,7 +74,7 @@ class ae_env():
 
     def content_loss(self, content_outputs, generated_outputs):
         # Compute normalized loss
-        cl = np.mean((np.squeeze(generated_outputs)/ self.robot_threshold - np.squeeze(content_outputs)/ self.robot_threshold) ** 2)
+        cl = np.mean((np.squeeze(generated_outputs)/ self.robot_threshold - np.squeeze(self.content_outputs)/ self.robot_threshold) ** 2)
 
         return cl
 
@@ -78,7 +85,7 @@ class ae_env():
         gram_generated = np.dot(squeezed_generated_outputs, np.transpose(squeezed_generated_outputs))
 
         # Get style Gram Matrix 
-        squeezed_style_outputs = np.squeeze(style_outputs)/ self.robot_threshold
+        squeezed_style_outputs = np.squeeze(self.style_outputs)/ self.robot_threshold
         gram_style = np.dot(squeezed_style_outputs, np.transpose(squeezed_style_outputs))
 
         # Compute loss
@@ -93,52 +100,41 @@ class ae_env():
                                                         self.input_size)  # generated_motion to NN friendly array for input
 
         #IPython.embed()
-		
-		# Content and Style outputs
-        content_outputs = self.ae_outputs([np.expand_dims(self.content_motion, axis=0)])
-        style_outputs = self.ae_outputs([np.expand_dims(self.style_motion, axis=0)])
 
-		# Generated outputs
+	# Generated outputs
         input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
         generated_outputs = self.ae_outputs([input_generated_motion])
 
-		# Compute losses
+	# Compute losses
 
         # cl and sl
-        cl = self.content_loss(content_outputs, generated_outputs)
-        sl = self.style_loss(style_outputs, generated_outputs)
+        cl = self.content_loss(self.content_outputs, generated_outputs)
+        sl = self.style_loss(self.style_outputs, generated_outputs)
 
         # dtw
+        #print(self.generated_motion)
+        #print(self.content_motion)
         alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
         pos_loss_cont = alignment.distance * (1e-5)
 
         # Velocity
         gen_velocity = 0; gen_points = 0;
-        for i in range(1, self.input_size):
-            if np.linalg.norm(np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2])) != 0:  # If stopped not taken in account to compute avg vel
-                gen_velocity = gen_velocity + np.linalg.norm(np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2]))
+        for i in range(1, num_points):
+            vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]));
+            if  vel_i != 0:  # If stopped not taken in account to compute avg vel
+                gen_velocity = gen_velocity + vel_i
                 gen_points += 1
+            
 
-        if gen_points != 0:
+        if gen_points != 0: 
             gen_velocity = gen_velocity / gen_points
-        # print("gen velocity", gen_velocity)
-        # print("style velocity", style_velocity)
+
         vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
-
-        #print("Velocity loss is:", vel_loss)
-        #print("DTW loss is:", pos_loss_cont)
-        #time.sleep(3)
-
-        # Velocity constraint
-        #gen_velocity = np.asarray(self.generated_motion[num_points - 1]) - np.asarray(self.generated_motion[num_points - 2])
-        #style_velocity = self.style_motion[num_points - 1] - self.style_motion[num_points - 2]
-        #vel_loss = np.mean((abs(gen_velocity)/self.robot_threshold - abs(style_velocity)/self.robot_threshold) ** 2)
-        #vel_loss = abs(np.linalg.norm(gen_velocity/self.robot_threshold)-np.linalg.norm(style_velocity/self.robot_threshold)) 
-
-        # Position constraint
-        #pos_loss_cont = np.mean((np.asarray(self.generated_motion[num_points - 1]) / self.robot_threshold - self.content_motion[num_points - 1] / self.robot_threshold) ** 2)
-
-		# End position constraint
+        #print("gen velocity", gen_velocity)
+        #print("style velocity", self.style_velocity)
+        #print("The actual vel loss is: ", vel_loss)
+        
+	# End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
             pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
         else:
@@ -147,12 +143,12 @@ class ae_env():
         # Time step
         n_timestep = num_points
 
-		# Total reward
+	# Total reward
         comp_reward = -(self.wc * n_timestep * cl + self.ws * n_timestep * sl + self.wp * pos_loss + self.wv * n_timestep * vel_loss + pos_loss_cont * n_timestep * self.wpc)
         #print("Velocity reward is: ", self.wv * n_timestep * vel_loss)
         #print("Content reward is: ", self.wc * n_timestep * cl)
         #print("Style reward is: ", self.ws * n_timestep * sl)
-        #print("DTW reward is: ", pos_loss_cont * n_timestep * self.wpc)
+        #print("DTW reward is: ", n_timestep * self.wpc * pos_loss_cont)
 
 		# Debug for training
         self.tcl += cl * self.wc
