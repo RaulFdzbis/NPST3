@@ -97,6 +97,10 @@ c_z_2 = np.linspace(100,10,num=15)
 c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
 
 # Generated test
+#Add sine noise
+sin_range = np.arange(0, 30, 2)
+sin = np.sin(sin_range)*50
+
 #x
 g_x_0 = np.linspace(10,10,num=15)
 g_x_1 = np.linspace(10,10,num=20)
@@ -147,6 +151,9 @@ for ep in range(total_episodes):
     # Init env and generated_motion
     generated_motion = env.reset(content_motion, style_motion)
     episodic_reward = 0
+    
+    # For Style Motion
+    #generated_motion[0]=style_motion[0]
 
     step = 1
     done = 0
@@ -161,17 +168,23 @@ for ep in range(total_episodes):
         action = policy(tf_prev_state)
         
         # Hard coded action
-        escala = 1
+        escala = 5
         if step*escala<INPUT_SIZE:
-        	action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
+        	action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+sin[step-1],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
+        	print(sin[step-1])
         	#action = style_motion[step*escala]-style_motion[(step-1)*escala]
-        else:
+        	#action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
+        	#action = [-x for x in action] #Negate action
+        else: 
         	action = [0,0,0]
         	
         
         # Receive state and reward from environment.
         generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
         #print(cl, sl, vel_loss, pos_loss_cont, pos_loss)
+        #print("Generated motion", generated_motion[step-1])
+        #print("Content motion", content_motion[step-1])
+        #print("Style motion", style_motion[step-1])
         
 
         cl_hist.append(cl)

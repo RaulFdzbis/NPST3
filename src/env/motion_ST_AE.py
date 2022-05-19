@@ -111,12 +111,6 @@ class ae_env():
         cl = self.content_loss(self.content_outputs, generated_outputs)
         sl = self.style_loss(self.style_outputs, generated_outputs)
 
-        # dtw
-        #print(self.generated_motion)
-        #print(self.content_motion)
-        alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
-        pos_loss_cont = alignment.distance * (1e-5)
-
         # Velocity
         gen_velocity = 0; gen_points = 0;
         for i in range(1, num_points):
@@ -137,8 +131,14 @@ class ae_env():
 	# End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
             pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
+            ## dtw ##
+            #print(self.generated_motion)
+            #print(self.content_motion)
+            alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
+            pos_loss_cont = alignment.distance * (1e-5)
         else:
            pos_loss = 0
+           pos_loss_cont =0
 
         # Time step
         n_timestep = num_points
