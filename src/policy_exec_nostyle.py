@@ -102,8 +102,11 @@ c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
 #noise = np.sin(sin_range)*100
 
 #Add Style noise
-noise = 0.1*style_motion
+noise=[]
+for i in range(np.shape(style_motion)[0] - 1):
+    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
 
+noise = 0.1*np.asarray(noise)
 #x
 g_x_0 = np.linspace(10,10,num=15)
 g_x_1 = np.linspace(10,10,num=20)
@@ -173,8 +176,11 @@ for ep in range(total_episodes):
         # Hard coded action
         escala = 5
         if step*escala<INPUT_SIZE:
-        	action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
-        	print(noise[step-1][0])
+            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0]+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]+noise[(step-1)*escala][2]]
+            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
+            action = [max(min(x, upper_bound), lower_bound) for x in
+                    action]
+        	#print(noise[step-1][0])
         	#action = style_motion[step*escala]-style_motion[(step-1)*escala]
         	#action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
         	#action = [-x for x in action] #Negate action

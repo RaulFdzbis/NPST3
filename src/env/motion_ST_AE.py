@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 from keras import backend as K
 import sys
+
 sys.path.append('../../')
 from utils import input_processing
 from operator import add
@@ -60,7 +61,7 @@ class ae_env():
         # Content and Style outputs
         self.content_outputs = self.ae_outputs([np.expand_dims(self.content_motion, axis=0)])
         self.style_outputs = self.ae_outputs([np.expand_dims(self.style_motion, axis=0)])
-        
+
         self.generated_motion = []
         self.generated_motion.append(content_motion[0])  # Init position
         self.done = 0
@@ -74,18 +75,19 @@ class ae_env():
 
     def content_loss(self, content_outputs, generated_outputs):
         # Compute normalized loss
-        cl = np.mean((np.squeeze(generated_outputs)/ self.robot_threshold - np.squeeze(self.content_outputs)/ self.robot_threshold) ** 2)
+        cl = np.mean((np.squeeze(generated_outputs) / self.robot_threshold - np.squeeze(
+            self.content_outputs) / self.robot_threshold) ** 2)
 
         return cl
 
     def style_loss(self, style_outputs, generated_outputs):
         # For the Style loss the Gram Matrix of the AE is computed
         # Get generated Gram Matrix 
-        squeezed_generated_outputs = np.squeeze(generated_outputs)/ self.robot_threshold
+        squeezed_generated_outputs = np.squeeze(generated_outputs) / self.robot_threshold
         gram_generated = np.dot(squeezed_generated_outputs, np.transpose(squeezed_generated_outputs))
 
         # Get style Gram Matrix 
-        squeezed_style_outputs = np.squeeze(self.style_outputs)/ self.robot_threshold
+        squeezed_style_outputs = np.squeeze(self.style_outputs) / self.robot_threshold
         gram_style = np.dot(squeezed_style_outputs, np.transpose(squeezed_style_outputs))
 
         # Compute loss
@@ -97,66 +99,70 @@ class ae_env():
         # Generated motion outputs for both cl and sl
         num_points = np.shape(self.generated_motion)[0]
         input_generated_motion = input_processing.input_generator(self.generated_motion,
-                                                        self.input_size)  # generated_motion to NN friendly array for input
+                                                                  self.input_size)  # generated_motion to NN friendly array for input
 
-        #IPython.embed()
-
-	# Generated outputs
-        input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
-        generated_outputs = self.ae_outputs([input_generated_motion])
-
-	# Compute losses
-
-        # cl and sl
-        cl = self.content_loss(self.content_outputs, generated_outputs)
-        sl = self.style_loss(self.style_outputs, generated_outputs)
-
-        # Velocity
-        gen_velocity = 0; gen_points = 0;
-        for i in range(1, num_points):
-            vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]));
-            if  vel_i != 0:  # If stopped not taken in account to compute avg vel
-                gen_velocity = gen_velocity + vel_i
-                gen_points += 1
-            
-
-        if gen_points != 0: 
-            gen_velocity = gen_velocity / gen_points
-
-        vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
-        #print("gen velocity", gen_velocity)
-        #print("style velocity", self.style_velocity)
-        #print("The actual vel loss is: ", vel_loss)
-        
-	# End position constraint
+        # IPython.embed()
+        # Compute losses only if trajectory finished
+        # End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
-            pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
+            pos_loss = np.mean((np.asarray(self.generated_motion[-1]) / self.robot_threshold - self.content_motion[
+                -1] / self.robot_threshold) ** 2)
             ## dtw ##
-            #print(self.generated_motion)
-            #print(self.content_motion)
+            # print(self.generated_motion)
+            # print(self.content_motion)
             alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
             pos_loss_cont = alignment.distance * (1e-5)
+
+            # Generated outputs
+            input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
+            generated_outputs = self.ae_outputs([input_generated_motion])
+
+            # cl and sl
+            cl = self.content_loss(self.content_outputs, generated_outputs)
+            sl = self.style_loss(self.style_outputs, generated_outputs)
+
+            # Velocity
+            gen_velocity = 0;
+            gen_points = 0;
+            for i in range(1, num_points):
+                vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]));
+                if vel_i != 0:  # If stopped not taken in account to compute avg vel
+                    gen_velocity = gen_velocity + vel_i
+                    gen_points += 1
+
+            if gen_points != 0:
+                gen_velocity = gen_velocity / gen_points
+
+            vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
+            # print("gen velocity", gen_velocity)
+            # print("style velocity", self.style_velocity)
+            # print("The actual vel loss is: ", vel_loss)
+
         else:
-           pos_loss = 0
-           pos_loss_cont =0
+            pos_loss = 0
+            pos_loss_cont = 0
+            cl = 0
+            sl = 0
+            vel_loss = 0
 
         # Time step
         n_timestep = num_points
 
-	# Total reward
-        comp_reward = -(self.wc * n_timestep * cl + self.ws * n_timestep * sl + self.wp * pos_loss + self.wv * n_timestep * vel_loss + pos_loss_cont * n_timestep * self.wpc)
-        #print("Velocity reward is: ", self.wv * n_timestep * vel_loss)
-        #print("Content reward is: ", self.wc * n_timestep * cl)
-        #print("Style reward is: ", self.ws * n_timestep * sl)
-        #print("DTW reward is: ", n_timestep * self.wpc * pos_loss_cont)
+        # Total reward
+        comp_reward = -(
+                    self.wc * n_timestep * cl + self.ws * n_timestep * sl + self.wp * pos_loss + self.wv * n_timestep * vel_loss + pos_loss_cont * n_timestep * self.wpc)
+        # print("Velocity reward is: ", self.wv * n_timestep * vel_loss)
+        # print("Content reward is: ", self.wc * n_timestep * cl)
+        # print("Style reward is: ", self.ws * n_timestep * sl)
+        # print("DTW reward is: ", n_timestep * self.wpc * pos_loss_cont)
 
-		# Debug for training
+        # Debug for training
         self.tcl += cl * self.wc
         self.tsl += sl * self.ws
         self.tpl += pos_loss * self.wp
         self.tvl += vel_loss * self.wv
 
-        #if np.shape(self.generated_motion)[0] == self.input_size:
+        # if np.shape(self.generated_motion)[0] == self.input_size:
         #    print("totals losses are: ", self.tcl, self.tsl, self.tpl, self.tvl)
         #    print("WARNING: CONT POSS ALSO ADDED IN THIS VERSION")
         return comp_reward, self.wc * n_timestep * cl, self.ws * n_timestep * sl, self.wv * n_timestep * vel_loss, n_timestep * self.wpc * pos_loss_cont, self.wp * pos_loss
@@ -166,7 +172,7 @@ class ae_env():
         self.generated_motion.append(list(
             np.clip(list(map(add, self.generated_motion[-1], step_action)), -300, 300)))  # add next step
 
-        step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss  = self.compute_reward()
+        step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss = self.compute_reward()
 
         if np.shape(self.generated_motion)[0] == self.input_size:
             self.done = 1
@@ -176,7 +182,7 @@ class ae_env():
 
 if __name__ == "__main__":
 
-    INPUT_SIZE = 50 
+    INPUT_SIZE = 50
     robot_threshold_test = 300  # in mm
     upper_bound = 0.1 * robot_threshold_test
     lower_bound = -0.1 * robot_threshold_test
@@ -243,7 +249,7 @@ if __name__ == "__main__":
             if done:
                 break
 
-		# Debug and plotting
+            # Debug and plotting
         generated_motion = input_processing.input_generator(env.generated_motion, INPUT_SIZE)  # For the plot
         print(generated_motion[0])
         print(content_motion[0])
