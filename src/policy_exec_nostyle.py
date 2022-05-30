@@ -98,8 +98,11 @@ c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
 
 # Generated test
 #Add sine noise
-sin_range = np.arange(0, 30, 2)
-sin = np.sin(sin_range)*50
+#sin_range = np.arange(0, 30, 1)
+#noise = np.sin(sin_range)*100
+
+#Add Style noise
+noise = 0.1*style_motion
 
 #x
 g_x_0 = np.linspace(10,10,num=15)
@@ -170,8 +173,8 @@ for ep in range(total_episodes):
         # Hard coded action
         escala = 5
         if step*escala<INPUT_SIZE:
-        	action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+sin[step-1],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
-        	print(sin[step-1])
+        	action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
+        	print(noise[step-1][0])
         	#action = style_motion[step*escala]-style_motion[(step-1)*escala]
         	#action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
         	#action = [-x for x in action] #Negate action
