@@ -28,6 +28,8 @@ args = parser.parse_args()
 # Parameters
 INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
+generated_scale = 5
+noise_scale = 1
 
 # Velocity bound
 upper_bound = 0.1 * robot_threshold
@@ -98,15 +100,15 @@ c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
 
 # Generated test
 #Add sine noise
-#sin_range = np.arange(0, 30, 1)
-#noise = np.sin(sin_range)*100
+sin_range = np.arange(0, 15, 1)
+noise = np.sin(sin_range)*20
 
 #Add Style noise
-noise=[]
-for i in range(np.shape(style_motion)[0] - 1):
-    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
+#noise=[]
+#for i in range(np.shape(style_motion)[0] - 1):
+#    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
 
-noise = 0.1*np.asarray(noise)
+noise = noise_scale*np.asarray(noise)
 #x
 g_x_0 = np.linspace(10,10,num=15)
 g_x_1 = np.linspace(10,10,num=20)
@@ -174,14 +176,15 @@ for ep in range(total_episodes):
         action = policy(tf_prev_state)
         
         # Hard coded action
-        escala = 5
+        escala = generated_scale
         if step*escala<INPUT_SIZE:
-            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0]+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]+noise[(step-1)*escala][2]]
-            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]]
-            action = [max(min(x, upper_bound), lower_bound) for x in
-                    action]
+            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0]+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]+noise[(step-1)*escala][2]] #XYZ noise
+            # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]] # X noise
+            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]] #Sine noise
+            # action = style_motion[step*escala]-style_motion[(step-1)*escala] # Style
+            action = [max(min(x, upper_bound), lower_bound) for x in action]
         	#print(noise[step-1][0])
-        	#action = style_motion[step*escala]-style_motion[(step-1)*escala]
+
         	#action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
         	#action = [-x for x in action] #Negate action
         else: 
