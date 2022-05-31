@@ -52,15 +52,19 @@ class ae_env():
         self.autoencoder = load_model(ae_path)  # Actor
         self.ae_outputs = K.function([self.autoencoder.input], [self.autoencoder.layers[2].output])
         # Content and Style outputs
-        self.content_outputs = self.ae_outputs([np.expand_dims(self.content_motion, axis=0)])
-        self.style_outputs = self.ae_outputs([np.expand_dims(self.style_motion, axis=0)])
+        input_content_motion = input_processing.input_generator(content_motion,input_size)  # To NN friendly array for input
+        input_style_motion = input_processing.input_generator(style_motion,input_size)  # To NN friendly array for input
+        self.content_outputs = self.ae_outputs([np.expand_dims(input_content_motion, axis=0)])
+        self.style_outputs = self.ae_outputs([np.expand_dims(input_style_motion, axis=0)])
 
     def reset(self, content_motion, style_motion):
         self.content_motion = np.asarray(content_motion)
         self.style_motion = np.asarray(style_motion)
         # Content and Style outputs
-        self.content_outputs = self.ae_outputs([np.expand_dims(self.content_motion, axis=0)])
-        self.style_outputs = self.ae_outputs([np.expand_dims(self.style_motion, axis=0)])
+        input_content_motion = input_processing.input_generator(content_motion,self.input_size)  # To NN friendly array for input
+        input_style_motion = input_processing.input_generator(style_motion,self.input_size)  # To NN friendly array for input
+        self.content_outputs = self.ae_outputs([np.expand_dims(input_content_motion, axis=0)])
+        self.style_outputs = self.ae_outputs([np.expand_dims(input_style_motion, axis=0)])
 
         self.generated_motion = []
         self.generated_motion.append(content_motion[0])  # Init position
