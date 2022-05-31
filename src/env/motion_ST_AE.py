@@ -36,11 +36,11 @@ class ae_env():
         self.done = 0
         self.robot_threshold = robot_threshold
         # Style Transfer and constraints weights
-        self.wc = 2
-        self.ws = 0.02
-        self.wp = 100
-        self.wv = 0.1
-        self.wpc = 0.1
+        self.wc = 20 # Ref tabla loss 2
+        self.ws = 0.2 # Ref tabla loss 0.02
+        self.wp = 1 # Ref tabla loss 100
+        self.wv = 0.1 # Ref tabla loss 0.1
+        self.wpc = 0.01 # Ref tabla loss 0.1
 
         # Debug
         self.tcl = 0
