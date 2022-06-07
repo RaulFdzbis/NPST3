@@ -8,16 +8,14 @@ import sys
 
 sys.path.append('../')
 from utils import input_processing
-import pickle
 from keras.models import load_model
 from env import motion_ST_AE
 import matplotlib.pyplot as plt
 import os
-from mpl_toolkits.mplot3d import Axes3D
 import IPython
 import random
-from operator import add
 import argparse
+import copy
 
 # Arguments
 parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2: Sad, 3: Angry.')
@@ -40,7 +38,7 @@ total_episodes = 1
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 #actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/05-05-22/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/06-07-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -73,13 +71,66 @@ style_motion = selected_styles[args.style]
 style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
+########################################################################################################################
+################################### Content Motion Generation ##########################################################
+########################################################################################################################
 
-# Generate Content Motion
 #Simple straight line
 #c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
 #c_y=np.linspace(0,200,num=50).reshape(-1,1)
 #c_z=np.linspace(0,50,num=50).reshape(-1,1)
 
+# Simple pick&place task randomly generated
+
+# Select random seed for the generation of the content
+content_motion = []
+content_motion.append([0, 0, 0])
+
+# First section "pick"
+pick_z_vel = 10;
+num_pick_points = 9
+current_point = copy.deepcopy(content_motion[0])
+# IPython.embed()
+for i in range(num_pick_points):
+    current_point[2] = current_point[2] + pick_z_vel
+    content_motion.append(copy.deepcopy(current_point))
+
+# Second section "move"
+num_move_points = 30;
+
+# Compute distances for x,y,z
+var = 100
+dx = np.clip(np.random.normal(150, var), 0, robot_threshold)
+y_max = np.sqrt(max(0, robot_threshold ** 2 - dx ** 2))
+dy = np.clip(np.random.normal(y_max, var), 0, y_max)
+z_max = np.sqrt(max(0, robot_threshold ** 2 - dx ** 2 - dy ** 2))
+dz = np.clip(np.random.normal(0, var), 0, z_max)
+
+# Compute x,y,z
+x = dx if random.random() < 0.5 else -dx
+y = dy if random.random() < 0.5 else -dy
+z = dz  # No negative z
+
+# Generate move section
+for i in range(num_move_points):
+    current_point[0] = current_point[0] + x / num_move_points
+    current_point[1] = current_point[1] + y / num_move_points
+    current_point[2] = current_point[2] + z / num_move_points
+    content_motion.append(copy.deepcopy(current_point))
+
+# Third section "place"
+place_z_vel = 10;
+num_place_points = 10
+
+for i in range(num_place_points):
+    current_point[2] = current_point[2] - place_z_vel
+    content_motion.append(copy.deepcopy(current_point))
+
+# Generate Content motion
+tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
+#content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
+
+""" Hard coded pick&place task
 # Simple pick&place task
 #x
 c_x_0 = np.linspace(10,10,num=15)
@@ -97,17 +148,14 @@ c_z_0 = np.linspace(10,100,num=15)
 c_z_1 = np.linspace(100,100,num=20)
 c_z_2 = np.linspace(100,10,num=15)
 c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
-
-# Generated test
-#Add sine noise
-sin_range = np.arange(0, 15, 1)
-noise = np.sin(sin_range)*20
-
 #Add Style noise
 #noise=[]
 #for i in range(np.shape(style_motion)[0] - 1):
 #    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
 
+#Add sine noise
+sin_range = np.arange(0, 15, 1)
+noise = np.sin(sin_range)*20
 noise = noise_scale*np.asarray(noise)
 #x
 g_x_0 = np.linspace(10,10,num=15)
@@ -132,6 +180,11 @@ content_motion = c_x
 content_motion = np.append(content_motion, c_y, axis=1)
 content_motion = np.append(content_motion, c_z, axis=1)
 tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
+"""
+
+########################################################################################################################
+################################### Content Motion Generation ##########################################################
+########################################################################################################################
 
 # env
 env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
@@ -174,7 +227,9 @@ for ep in range(total_episodes):
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
+        #print(action)
         
+        """
         # Hard coded action
         escala = generated_scale
         if step*escala<INPUT_SIZE:
@@ -189,6 +244,7 @@ for ep in range(total_episodes):
         	#action = [-x for x in action] #Negate action
         else: 
         	action = [0,0,0]
+        """
         	
         
         # Receive state and reward from environment.
@@ -252,6 +308,6 @@ for ep in range(total_episodes):
             ##print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
             #print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
             #print("Velocity loss: ", vel_hist[i-1])
-            #ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/80)), linewidth=2)
-            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/80)), linewidth=2)
+            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/80)), linewidth=2)
+            #ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/80)), linewidth=2)
     plt.show()
