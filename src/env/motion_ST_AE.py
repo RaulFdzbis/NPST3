@@ -40,7 +40,7 @@ class ae_env():
         self.ws = 0.2 # Ref tabla loss 0.02
         self.wp = 10 # End pos Ref tabla loss 100
         self.wv = 0.1 # Ref tabla loss 0.1
-        self.wpc = 0.01 # DTW pos Ref tabla loss 0.1
+        self.wpc = 0.01*(1e-5) # DTW pos Ref tabla loss 0.1
 
         # Debug
         self.tcl = 0
@@ -115,7 +115,15 @@ class ae_env():
             # print(self.generated_motion)
             # print(self.content_motion)
             alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
-            pos_loss_cont = alignment.distance * (1e-5)
+            pos_loss_cont = alignment.distance
+            #Plot for debug purposes
+            # fig = plt.figure()
+            # ax = fig.add_subplot(1, 3, 1, projection='3d')
+            # ax.plot(self.content_motion[:, 0], self.content_motion[:, 1], self.content_motion[:, 2], label="content")
+            # ax.plot(generated_motion_arr[:, 0][alignment.index1], generated_motion_arr[:, 1][alignment.index1], generated_motion_arr[:, 2][alignment.index1], label="content")
+            # plt.show()
+
+            IPython.embed()
 
             # Generated outputs
             input_generated_motion = np.expand_dims(input_generated_motion, axis=0)

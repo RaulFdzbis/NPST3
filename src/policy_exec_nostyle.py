@@ -26,7 +26,7 @@ args = parser.parse_args()
 # Parameters
 INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
-generated_scale = 5
+generated_scale = 3
 noise_scale = 1
 
 # Velocity bound
@@ -38,7 +38,7 @@ total_episodes = 1
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 #actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/06-07-22/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -129,6 +129,25 @@ for i in range(num_place_points):
 # Generate Content motion
 tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
 #content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
+
+# Hard coded Generated motion
+g_x = [i[0] for i in content_motion]
+g_y = [i[1] for i in content_motion]
+g_z = [i[2] for i in content_motion]
+
+## Define noise
+
+#Add Style noise
+#noise=[]
+#for i in range(np.shape(style_motion)[0] - 1):
+#    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
+
+#Add sine noise
+sin_range = np.arange(0, 30, 2)
+noise = np.sin(sin_range)*5
+noise = noise_scale*np.asarray(noise)
+
+
 
 """ Hard coded pick&place task
 # Simple pick&place task
@@ -229,13 +248,14 @@ for ep in range(total_episodes):
         action = policy(tf_prev_state)
         #print(action)
         
-        """
         # Hard coded action
         escala = generated_scale
         if step*escala<INPUT_SIZE:
-            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0]+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]+noise[(step-1)*escala][2]] #XYZ noise
-            # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]] # X noise
-            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])[0]+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala])[0],-(g_z[(step-1)*escala]-g_z[(step)*escala])[0]] #Sine noise
+            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])+noise[(step-1)*escala][2]] #XYZ noise
+            # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # X noise
+            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
+            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala]),-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
+            print(action)
             # action = style_motion[step*escala]-style_motion[(step-1)*escala] # Style
             action = [max(min(x, upper_bound), lower_bound) for x in action]
         	#print(noise[step-1][0])
@@ -244,7 +264,6 @@ for ep in range(total_episodes):
         	#action = [-x for x in action] #Negate action
         else: 
         	action = [0,0,0]
-        """
         	
         
         # Receive state and reward from environment.
