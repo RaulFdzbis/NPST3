@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import copy
 from dtw import *
 import IPython
+from scipy.spatial.distance import cdist
 
 
 class ae_env():
@@ -77,14 +78,23 @@ class ae_env():
 
         return self.generated_motion
 
-    def content_loss(self, content_outputs, generated_outputs):
+    def content_loss(self, generated_outputs):
         # Compute normalized loss
         cl = np.mean((np.squeeze(generated_outputs) / self.robot_threshold - np.squeeze(
             self.content_outputs) / self.robot_threshold) ** 2)
 
         return cl
 
-    def style_loss(self, style_outputs, generated_outputs):
+    def euclidean_warp(self, reference_motion, generated_motion):
+        euc_distances = cdist(reference_motion, generated_motion)
+        warped_trajectory = []
+        for i in range(np.shape(reference_motion)[0]):
+            min_index = np.argmin(euc_distances[i])
+            warped_trajectory.append(generated_motion[min_index])
+
+        return np.asarray(warped_trajectory)
+
+    def style_loss(self, generated_outputs):
         # For the Style loss the Gram Matrix of the AE is computed
         # Get generated Gram Matrix 
         squeezed_generated_outputs = np.squeeze(generated_outputs) / self.robot_threshold
@@ -116,10 +126,13 @@ class ae_env():
             # print(self.content_motion)
             alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
             pos_loss_cont = alignment.distance
+            generated_motion_arr = np.asarray(self.generated_motion)
+            warped_t = self.euclidean_warp(self.content_motion, np.asarray(self.generated_motion))
             #Plot for debug purposes
             # fig = plt.figure()
             # ax = fig.add_subplot(1, 3, 1, projection='3d')
             # ax.plot(self.content_motion[:, 0], self.content_motion[:, 1], self.content_motion[:, 2], label="content")
+            #
             # ax.plot(generated_motion_arr[:, 0][alignment.index1], generated_motion_arr[:, 1][alignment.index1], generated_motion_arr[:, 2][alignment.index1], label="content")
             # plt.show()
 

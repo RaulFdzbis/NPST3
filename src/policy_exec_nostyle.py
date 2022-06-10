@@ -26,7 +26,7 @@ args = parser.parse_args()
 # Parameters
 INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
-generated_scale = 3
+generated_scale = 6
 noise_scale = 1
 
 # Velocity bound
@@ -38,7 +38,7 @@ total_episodes = 1
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 #actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/27-04-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
