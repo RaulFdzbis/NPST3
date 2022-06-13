@@ -26,14 +26,14 @@ args = parser.parse_args()
 # Parameters
 INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
-generated_scale = 6
-noise_scale = 1
+generated_scale = 1
+noise_scale = 25
 
 # Velocity bound
 upper_bound = 0.1 * robot_threshold
 lower_bound = -0.1 * robot_threshold
 
-total_episodes = 1
+total_episodes = 10
 
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
@@ -70,83 +70,6 @@ selected_styles = input_processing.scale_input(selected_styles, robot_threshold)
 style_motion = selected_styles[args.style]
 style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
-
-########################################################################################################################
-################################### Content Motion Generation ##########################################################
-########################################################################################################################
-
-#Simple straight line
-#c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
-#c_y=np.linspace(0,200,num=50).reshape(-1,1)
-#c_z=np.linspace(0,50,num=50).reshape(-1,1)
-
-# Simple pick&place task randomly generated
-
-# Select random seed for the generation of the content
-content_motion = []
-content_motion.append([0, 0, 0])
-
-# First section "pick"
-pick_z_vel = 10;
-num_pick_points = 9
-current_point = copy.deepcopy(content_motion[0])
-# IPython.embed()
-for i in range(num_pick_points):
-    current_point[2] = current_point[2] + pick_z_vel
-    content_motion.append(copy.deepcopy(current_point))
-
-# Second section "move"
-num_move_points = 30;
-
-# Compute distances for x,y,z
-var = 100
-dx = np.clip(np.random.normal(150, var), 0, robot_threshold)
-y_max = np.sqrt(max(0, robot_threshold ** 2 - dx ** 2))
-dy = np.clip(np.random.normal(y_max, var), 0, y_max)
-z_max = np.sqrt(max(0, robot_threshold ** 2 - dx ** 2 - dy ** 2))
-dz = np.clip(np.random.normal(0, var), 0, z_max)
-
-# Compute x,y,z
-x = dx if random.random() < 0.5 else -dx
-y = dy if random.random() < 0.5 else -dy
-z = dz  # No negative z
-
-# Generate move section
-for i in range(num_move_points):
-    current_point[0] = current_point[0] + x / num_move_points
-    current_point[1] = current_point[1] + y / num_move_points
-    current_point[2] = current_point[2] + z / num_move_points
-    content_motion.append(copy.deepcopy(current_point))
-
-# Third section "place"
-place_z_vel = 10;
-num_place_points = 10
-
-for i in range(num_place_points):
-    current_point[2] = current_point[2] - place_z_vel
-    content_motion.append(copy.deepcopy(current_point))
-
-# Generate Content motion
-tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
-#content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
-
-# Hard coded Generated motion
-g_x = [i[0] for i in content_motion]
-g_y = [i[1] for i in content_motion]
-g_z = [i[2] for i in content_motion]
-
-## Define noise
-
-#Add Style noise
-#noise=[]
-#for i in range(np.shape(style_motion)[0] - 1):
-#    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
-
-#Add sine noise
-sin_range = np.arange(0, 30, 2)
-noise = np.sin(sin_range)*5
-noise = noise_scale*np.asarray(noise)
-
 
 
 """ Hard coded pick&place task
@@ -200,21 +123,59 @@ content_motion = np.append(content_motion, c_y, axis=1)
 content_motion = np.append(content_motion, c_z, axis=1)
 tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
 """
+def generate_content():
+    # Simple straight line
+    # c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
+    # c_y=np.linspace(0,200,num=50).reshape(-1,1)
+    # c_z=np.linspace(0,50,num=50).reshape(-1,1)
 
-########################################################################################################################
-################################### Content Motion Generation ##########################################################
-########################################################################################################################
+    # Simple pick&place task randomly generated
 
-# env
-env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
+    # Select random seed for the generation of the content
+    content_motion = []
+    content_motion.append([0, 0, 0])
 
-# reward history
-cl_hist=[]
-sl_hist=[]
-vel_hist=[]
-poss_hist=[]
-end_poss_hist=[]
+    # First section "pick"
+    pick_z_vel = 10;
+    num_pick_points = 9
+    current_point = copy.deepcopy(content_motion[0])
+    # IPython.embed()
+    for i in range(num_pick_points):
+        current_point[2] = current_point[2] + pick_z_vel
+        content_motion.append(copy.deepcopy(current_point))
 
+    # Second section "move"
+    num_move_points = 30;
+
+    # Compute distances for x,y,z
+    var = 100
+    dx = np.clip(np.random.normal(150, var), 0, robot_threshold)
+    y_max = np.sqrt(max(0, robot_threshold ** 2 - dx ** 2))
+    dy = np.clip(np.random.normal(y_max, var), 0, y_max)
+    z_max = np.sqrt(max(0, robot_threshold ** 2 - dx ** 2 - dy ** 2))
+    dz = np.clip(np.random.normal(0, var), 0, z_max)
+
+    # Compute x,y,z
+    x = dx if random.random() < 0.5 else -dx
+    y = dy if random.random() < 0.5 else -dy
+    z = dz  # No negative z
+
+    # Generate move section
+    for i in range(num_move_points):
+        current_point[0] = current_point[0] + x / num_move_points
+        current_point[1] = current_point[1] + y / num_move_points
+        current_point[2] = current_point[2] + z / num_move_points
+        content_motion.append(copy.deepcopy(current_point))
+
+    # Third section "place"
+    place_z_vel = 10;
+    num_place_points = 10
+
+    for i in range(num_place_points):
+        current_point[2] = current_point[2] - place_z_vel
+        content_motion.append(copy.deepcopy(current_point))
+
+    return content_motion
 
 def policy(state):
     sampled_actions = tf.squeeze(actor_model(state))
@@ -226,11 +187,45 @@ def policy(state):
     return list(np.squeeze(legal_action))
 
 
+
+# env
+content_motion = generate_content()
+env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
+
 for ep in range(total_episodes):
+    # reward history
+    cl_hist = []
+    sl_hist = []
+    vel_hist = []
+    poss_hist = []
+    end_poss_hist = []
 
     # Init env and generated_motion
     generated_motion = env.reset(content_motion, style_motion)
     episodic_reward = 0
+
+    content_motion = generate_content()
+
+    # Generate Content motion
+    tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
+    # content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
+
+    # Hard coded Generated motion
+    g_x = [i[0] for i in content_motion]
+    g_y = [i[1] for i in content_motion]
+    g_z = [i[2] for i in content_motion]
+
+    ## Define noise
+
+    # Add Style noise
+    # noise=[]
+    # for i in range(np.shape(style_motion)[0] - 1):
+    #    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
+
+    # Add sine noise
+    sin_range = np.arange(0, 200, 4)
+    noise = np.sin(sin_range)
+    noise = noise_scale * np.asarray(noise)
     
     # For Style Motion
     #generated_motion[0]=style_motion[0]
@@ -251,10 +246,10 @@ for ep in range(total_episodes):
         # Hard coded action
         escala = generated_scale
         if step*escala<INPUT_SIZE:
-            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])+noise[(step-1)*escala][2]] #XYZ noise
+            # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])+noise[(step-1)*escala][2]] #XYZ noise
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # X noise
-            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
-            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala]),-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
+            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
+            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala]),-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # No noise
             print(action)
             # action = style_motion[step*escala]-style_motion[(step-1)*escala] # Style
             action = [max(min(x, upper_bound), lower_bound) for x in action]
