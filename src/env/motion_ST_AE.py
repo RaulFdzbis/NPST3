@@ -141,22 +141,22 @@ class ae_env():
             input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
             generated_outputs = self.ae_outputs([input_generated_motion])
 
-            # Generated raw outputs
-            input_generated_motion_2 = input_processing.input_generator(self.generated_motion, self.input_size)  # generated_motion to NN friendly array for input
-            input_generated_motion_2 = np.expand_dims(input_generated_motion_2, axis=0)
-            generated_outputs_2 = self.ae_outputs([input_generated_motion_2])
+            # Generated raw outputs (No warp)
+            #input_generated_motion_2 = input_processing.input_generator(self.generated_motion, self.input_size)  # generated_motion to NN friendly array for input
+            #input_generated_motion_2 = np.expand_dims(input_generated_motion_2, axis=0)
+            #generated_outputs_2 = self.ae_outputs([input_generated_motion_2])
 
             # cl and sl
             cl = self.content_loss(generated_outputs)
             sl = self.style_loss(generated_outputs)
-            print("\nContent loss DTW:", self.wc * num_points * cl)
-            print("Style loss DTW:", self.ws * num_points * sl)
+            #print("\nContent loss DTW:", self.wc * num_points * cl)
+            #print("Style loss DTW:", self.ws * num_points * sl)
 
-            # cl and sl
-            cl_2 = self.content_loss(generated_outputs_2)
-            sl_2 = self.style_loss(generated_outputs_2)
-            print("Content loss:", self.wc * num_points * cl_2)
-            print("Style loss:", self.ws * num_points * sl_2)
+            # cl and sl (No warp)
+            #cl_2 = self.content_loss(generated_outputs_2)
+            #sl_2 = self.style_loss(generated_outputs_2)
+            #print("Content loss:", self.wc * num_points * cl_2)
+            #print("Style loss:", self.ws * num_points * sl_2)
 
 
 
