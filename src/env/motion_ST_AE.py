@@ -90,9 +90,9 @@ class ae_env():
         warped_trajectory = []
         for i in range(np.shape(reference_motion)[0]):
             min_index = np.argmin(euc_distances[i])
-            warped_trajectory.append(generated_motion[min_index])
+            warped_trajectory.append(generated_motion[min_index].tolist())
 
-        return np.asarray(warped_trajectory)
+        return warped_trajectory
 
     def style_loss(self, generated_outputs):
         # For the Style loss the Gram Matrix of the AE is computed
@@ -112,8 +112,7 @@ class ae_env():
     def compute_reward(self):
         # Generated motion outputs for both cl and sl
         num_points = np.shape(self.generated_motion)[0]
-        input_generated_motion = input_processing.input_generator(self.generated_motion,
-                                                                  self.input_size)  # generated_motion to NN friendly array for input
+
 
         # IPython.embed()
         # Compute losses only if trajectory finished
@@ -126,8 +125,10 @@ class ae_env():
             # print(self.content_motion)
             alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
             pos_loss_cont = alignment.distance
-            generated_motion_arr = np.asarray(self.generated_motion)
             warped_t = self.euclidean_warp(self.content_motion, np.asarray(self.generated_motion))
+
+            input_generated_motion = input_processing.input_generator(warped_t, self.input_size)  # generated_motion to NN friendly array for input
+
             #Plot for debug purposes
             # fig = plt.figure()
             # ax = fig.add_subplot(1, 3, 1, projection='3d')
@@ -136,15 +137,30 @@ class ae_env():
             # ax.plot(generated_motion_arr[:, 0][alignment.index1], generated_motion_arr[:, 1][alignment.index1], generated_motion_arr[:, 2][alignment.index1], label="content")
             # plt.show()
 
-            IPython.embed()
-
             # Generated outputs
             input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
             generated_outputs = self.ae_outputs([input_generated_motion])
 
+            # Generated raw outputs
+            input_generated_motion_2 = input_processing.input_generator(self.generated_motion, self.input_size)  # generated_motion to NN friendly array for input
+            input_generated_motion_2 = np.expand_dims(input_generated_motion_2, axis=0)
+            generated_outputs_2 = self.ae_outputs([input_generated_motion_2])
+
             # cl and sl
-            cl = self.content_loss(self.content_outputs, generated_outputs)
-            sl = self.style_loss(self.style_outputs, generated_outputs)
+            cl = self.content_loss(generated_outputs)
+            sl = self.style_loss(generated_outputs)
+            print("\nContent loss DTW:", self.wc * num_points * cl)
+            print("Style loss DTW:", self.ws * num_points * sl)
+
+            # cl and sl
+            cl_2 = self.content_loss(generated_outputs_2)
+            sl_2 = self.style_loss(generated_outputs_2)
+            print("Content loss:", self.wc * num_points * cl_2)
+            print("Style loss:", self.ws * num_points * sl_2)
+
+
+
+            #IPython.embed()
 
             # Velocity
             gen_velocity = 0;
