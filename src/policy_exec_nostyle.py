@@ -16,6 +16,7 @@ import IPython
 import random
 import argparse
 import copy
+import time
 
 # Arguments
 parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2: Sad, 3: Angry.')
@@ -38,7 +39,7 @@ total_episodes = 10
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 #actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/27-04-22/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -72,58 +73,65 @@ style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
 
-""" Hard coded pick&place task
-# Simple pick&place task
-#x
-c_x_0 = np.linspace(10,10,num=15)
-c_x_1 = np.linspace(10,10,num=20)
-c_x_2 = np.linspace(10,10,num=15)
-c_x = np.concatenate((c_x_0, c_x_1, c_x_2)).reshape(-1,1)
-#y
-c_y_0 = np.linspace(10,10,num=15)
-c_y_1 = np.linspace(10,200,num=20)
-c_y_2 = np.linspace(200,200,num=15)
-c_y = np.concatenate((c_y_0, c_y_1, c_y_2)).reshape(-1,1)
+def test_trajectories(selected_trajectory):
+    if selected_trajectory==0: #Straight line
+        content_motion = []
+        content_motion.append([0, 0, 0])
+        for j in range(INPUT_SIZE-1):
+            content_motion.append([content_motion[j][0]+50/200,content_motion[j][1]+50/200,content_motion[j][2]+50/200])
 
-#z
-c_z_0 = np.linspace(10,100,num=15)
-c_z_1 = np.linspace(100,100,num=20)
-c_z_2 = np.linspace(100,10,num=15)
-c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
-#Add Style noise
-#noise=[]
-#for i in range(np.shape(style_motion)[0] - 1):
-#    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
+    elif selected_trajectory==1: #Pick and place task
+        content_motion = []
+        content_motion.append([0, 0, 0])
+        # Simple pick&place task
+        # x
+        c_x_0 = np.linspace(0, 0, num=15)
+        c_x_1 = np.linspace(0, 150, num=20)
+        c_x_2 = np.linspace(150, 150, num=15)
+        c_x = np.concatenate((c_x_0, c_x_1, c_x_2)).reshape(-1, 1)
+        # y
+        c_y_0 = np.linspace(0, 0, num=15)
+        c_y_1 = np.linspace(0, 150, num=20)
+        c_y_2 = np.linspace(150, 150, num=15)
+        c_y = np.concatenate((c_y_0, c_y_1, c_y_2)).reshape(-1, 1)
+        # z
+        c_z_0 = np.linspace(0, 100, num=15)
+        c_z_1 = np.linspace(100, 100, num=20)
+        c_z_2 = np.linspace(100, 0, num=15)
+        c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1, 1)
+        content_motion = c_x
+        content_motion = np.append(content_motion, c_y, axis=1)
+        content_motion = np.append(content_motion, c_z, axis=1)
 
-#Add sine noise
-sin_range = np.arange(0, 15, 1)
-noise = np.sin(sin_range)*20
-noise = noise_scale*np.asarray(noise)
-#x
-g_x_0 = np.linspace(10,10,num=15)
-g_x_1 = np.linspace(10,10,num=20)
-g_x_2 = np.linspace(10,10,num=15)
-g_x = np.concatenate((c_x_0, c_x_1, c_x_2)).reshape(-1,1)
-#y
-g_y_0 = np.linspace(10,10,num=15)
-g_y_1 = np.linspace(10,200,num=20)
-g_y_2 = np.linspace(200,200,num=15)
-g_y = np.concatenate((c_y_0, c_y_1, c_y_2)).reshape(-1,1)
+    elif selected_trajectory==2: # "free" randomly generated trajectory
+        content_motion = []
+        # Generate random trajectory
+        s_z = np.arange(0,100,2)
+        s_x = np.sin(s_z*2*np.pi/100)*100; # Full normalized sine period escaled *100
+        s_y = np.cos(s_z*2*np.pi/100)*100; # Full normalized cosine period escaled *100
 
-#z
-g_z_0 = np.linspace(10,100,num=15)
-g_z_1 = np.linspace(100,100,num=20)
-g_z_2 = np.linspace(100,10,num=15)
-g_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1,1)
+        for j in range(INPUT_SIZE):
+            content_motion.append([s_x[j],s_y[j],s_z[j]])
+
+    else:
+        print("Please introduce valid int->0: Straight line; 1: Pick&Place; 2: CMU db trajectory")
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    content_motion_array = np.asarray(content_motion)
+    for i in range(1, INPUT_SIZE):
+        ax.plot(content_motion_array[:, 0][i:i + 2],
+                content_motion_array[:, 1][i:i + 2],
+                content_motion_array[:, 2][i:i + 2],
+                c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/80)),
+                linewidth=2)
+    plt.show()
+    time.sleep(1)
+
+    return content_motion
 
 
-# Full trajectory
-content_motion = c_x
-content_motion = np.append(content_motion, c_y, axis=1)
-content_motion = np.append(content_motion, c_z, axis=1)
-tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
-"""
-def generate_content():
+def generate_content_pp():
     # Simple straight line
     # c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
     # c_y=np.linspace(0,200,num=50).reshape(-1,1)
@@ -143,6 +151,7 @@ def generate_content():
     for i in range(num_pick_points):
         current_point[2] = current_point[2] + pick_z_vel
         content_motion.append(copy.deepcopy(current_point))
+
 
     # Second section "move"
     num_move_points = 30;
@@ -189,7 +198,7 @@ def policy(state):
 
 
 # env
-content_motion = generate_content()
+content_motion = generate_content_pp()
 env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
 
 for ep in range(total_episodes):
@@ -204,7 +213,9 @@ for ep in range(total_episodes):
     generated_motion = env.reset(content_motion, style_motion)
     episodic_reward = 0
 
-    content_motion = generate_content()
+    IPython.embed()
+
+    content_motion = generate_content_pp()
 
     # Generate Content motion
     tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
