@@ -27,19 +27,19 @@ args = parser.parse_args()
 # Parameters
 INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
-generated_scale = 5
+generated_scale = 1
 noise_scale = 25
 
 # Velocity bound
 upper_bound = 0.1 * robot_threshold
 lower_bound = -0.1 * robot_threshold
 
-total_episodes = 10
+total_episodes = 3
 
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 #actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/06-16-22/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -213,23 +213,32 @@ for ep in range(total_episodes):
     generated_motion = env.reset(content_motion, style_motion)
     episodic_reward = 0
 
-    content_motion = generate_content_pp()
+    if ep == 0:
+        content_motion = test_trajectories(0)
+
+    elif ep == 1:
+        content_motion = test_trajectories(1)
+
+    elif ep == 2:
+        content_motion = test_trajectories(2)
+    else:
+        content_motion = generate_content_pp()
 
     # Generate Content motion
     tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
     # content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
 
     # Hard coded Generated motion
-    g_x = [i[0] for i in content_motion]
-    g_y = [i[1] for i in content_motion]
-    g_z = [i[2] for i in content_motion]
+    #g_x = [i[0] for i in content_motion]
+    #g_y = [i[1] for i in content_motion]
+    #g_z = [i[2] for i in content_motion]
 
     ## Define noise
 
     # Add Style noise
-    noise=[]
-    for i in range(np.shape(style_motion)[0] - 1):
-        noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
+    # noise=[]
+    # for i in range(np.shape(style_motion)[0] - 1):
+    #    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
 
     # Add sine noise
     #sin_range = np.arange(0, 200, 4)
@@ -253,21 +262,21 @@ for ep in range(total_episodes):
         #print(action)
         
         # Hard coded action
-        escala = generated_scale
-        if step*escala<INPUT_SIZE:
+        #escala = generated_scale
+        #if step*escala<INPUT_SIZE:
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])+noise[(step-1)*escala][2]] #XYZ noise
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # X noise
-       #     action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
-            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala]),-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # No noise
+            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
+            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala]),-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # No noise
             #print(action)
             # action = style_motion[step*escala]-style_motion[(step-1)*escala] # Style
-            action = [max(min(x, upper_bound), lower_bound) for x in action]
-            #print(noise[step-1][0])
+            #action = [max(min(x, upper_bound), lower_bound) for x in action]
+        	#print(noise[step-1][0])
 
-            action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
-            #action = [-x for x in action] #Negate action
-        else:
-        	action = [0,0,0]
+        	#action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
+        	#action = [-x for x in action] #Negate action
+        #else:
+        #	action = [0,0,0]
         	
         
         # Receive state and reward from environment.
@@ -295,12 +304,12 @@ for ep in range(total_episodes):
         sys.stdout.flush()
 
     print("/")
-    print("The total loss is", episodic_reward)
-    print("The CL loss is:", np.sum(cl_hist))
-    print("The SL loss is:", np.sum(sl_hist))
-    print("The Vel loss is:", np.sum(vel_hist))
-    print("The Poss loss is:", np.sum(poss_hist))
-    print("The EndPoss loss is:", np.sum(end_poss_hist))
+    print("The total loss is", "{:,}".format(episodic_reward))
+    print("The CL loss is:", "{:,}".format(np.sum(cl_hist)))
+    print("The SL loss is:", "{:,}".format(np.sum(sl_hist)))
+    print("The Vel loss is:", "{:,}".format(np.sum(vel_hist)))
+    print("The Poss loss is:", "{:,}".format(np.sum(poss_hist)))
+    print("The EndPoss loss is:", "{:,}".format(np.sum(end_poss_hist)))
     
     content_motion_array = np.asarray(content_motion)
     generated_motion_array = np.asarray(generated_motion)
