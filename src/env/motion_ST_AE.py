@@ -40,7 +40,7 @@ class ae_env():
         self.wc = 20 # Ref tabla loss 2
         self.ws = 0.2 # Ref tabla loss 0.02
         self.wp = 10 # End pos Ref tabla loss 100
-        self.wv = 0.1 # Ref tabla loss 0.1
+        self.wv = 1 # Ref tabla loss 0.1
         self.wpc = 0.01*(1e-5) # DTW pos Ref tabla loss 0.1
 
         # Debug
@@ -85,15 +85,6 @@ class ae_env():
 
         return cl
 
-    def euclidean_warp(self, reference_motion, generated_motion):
-        euc_distances = cdist(reference_motion, generated_motion)
-        warped_trajectory = []
-        for i in range(np.shape(reference_motion)[0]):
-            min_index = np.argmin(euc_distances[i])
-            warped_trajectory.append(generated_motion[min_index].tolist())
-
-        return warped_trajectory
-
     def style_loss(self, generated_outputs):
         # For the Style loss the Gram Matrix of the AE is computed
         # Get generated Gram Matrix 
@@ -123,11 +114,12 @@ class ae_env():
             ## dtw ##
             # print(self.generated_motion)
             # print(self.content_motion)
-            alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True, distance_only=True)
+            alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True)
             pos_loss_cont = alignment.distance
-            warped_t = self.euclidean_warp(self.content_motion, np.asarray(self.generated_motion))
+            wq = warp(alignment, index_reference=False) #Find the warped trajectory
+            warped_g = np.asarray(self.generated_motion)[wq]
 
-            input_generated_motion = input_processing.input_generator(warped_t, self.input_size)  # generated_motion to NN friendly array for input
+            input_generated_motion = input_processing.input_generator(warped_g, self.input_size)  # generated_motion to NN friendly array for input
 
             #Plot for debug purposes
             # fig = plt.figure()
