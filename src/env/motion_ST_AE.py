@@ -18,7 +18,6 @@ from dtw import *
 import IPython
 from scipy.spatial.distance import cdist
 
-
 class ae_env():
     def __init__(self, content_motion, style_motion, input_size, ae_path, robot_threshold=300):
         # Init the desired motions
