@@ -27,7 +27,7 @@ args = parser.parse_args()
 # Parameters
 INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
-generated_scale = 1
+generated_scale = 5
 noise_scale = 25
 
 # Velocity bound
@@ -39,7 +39,7 @@ total_episodes = 10
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 #actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/06-16-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/autoencoder.h5"
@@ -213,8 +213,6 @@ for ep in range(total_episodes):
     generated_motion = env.reset(content_motion, style_motion)
     episodic_reward = 0
 
-    IPython.embed()
-
     content_motion = generate_content_pp()
 
     # Generate Content motion
@@ -229,14 +227,14 @@ for ep in range(total_episodes):
     ## Define noise
 
     # Add Style noise
-    # noise=[]
-    # for i in range(np.shape(style_motion)[0] - 1):
-    #    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
+    noise=[]
+    for i in range(np.shape(style_motion)[0] - 1):
+        noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
 
     # Add sine noise
-    sin_range = np.arange(0, 200, 4)
-    noise = np.sin(sin_range)
-    noise = noise_scale * np.asarray(noise)
+    #sin_range = np.arange(0, 200, 4)
+    #noise = np.sin(sin_range)
+    #noise = noise_scale * np.asarray(noise)
     
     # For Style Motion
     #generated_motion[0]=style_motion[0]
@@ -259,16 +257,16 @@ for ep in range(total_episodes):
         if step*escala<INPUT_SIZE:
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])+noise[(step-1)*escala][2]] #XYZ noise
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # X noise
-            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
-            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala]),-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # No noise
-            print(action)
+       #     action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
+            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala]),-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # No noise
+            #print(action)
             # action = style_motion[step*escala]-style_motion[(step-1)*escala] # Style
             action = [max(min(x, upper_bound), lower_bound) for x in action]
-        	#print(noise[step-1][0])
+            #print(noise[step-1][0])
 
-        	#action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
-        	#action = [-x for x in action] #Negate action
-        else: 
+            action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
+            #action = [-x for x in action] #Negate action
+        else:
         	action = [0,0,0]
         	
         

@@ -118,6 +118,8 @@ class ae_env():
             pos_loss_cont = alignment.distance
             wq = warp(alignment, index_reference=False) #Find the warped trajectory
             warped_g = np.asarray(self.generated_motion)[wq]
+            print("Trajectory is: ", self.content_motion)
+            print("Trajectory generated is: ", warped_g)
 
             input_generated_motion = input_processing.input_generator(warped_g, self.input_size)  # generated_motion to NN friendly array for input
 
@@ -132,6 +134,8 @@ class ae_env():
             # Generated outputs
             input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
             generated_outputs = self.ae_outputs([input_generated_motion])
+            
+            IPython.embed()
 
             # Generated raw outputs (No warp)
             #input_generated_motion_2 = input_processing.input_generator(self.generated_motion, self.input_size)  # generated_motion to NN friendly array for input
