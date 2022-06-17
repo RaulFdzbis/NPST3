@@ -186,6 +186,85 @@ def generate_content_pp():
 
     return content_motion
 
+def create_hermite_curve(p0,v0,p1,v1):
+    # Define constant H
+    H = np.array([
+        [1, 0, -3, 2],
+        [0, 1, -2, 1],
+        [0, 0, -1, 1],
+        [0, 0, 3, -2]
+    ])
+    """
+    Creates a hermite curve between two points with given tangents
+    """
+    P = np.array([p0,v0,v1,p1]).transpose()
+    PH = P @ H
+    return lambda t: np.dot(PH, np.array([1,t,t**2,t**3]))
+
+def generate_hermitian_traj(p,v,t_values, input_size=INPUT_SIZE):
+    #Get num_points
+    num_pairs = np.shape(p)[0]-1
+
+    #Define trajectory
+    traj = []
+    for i in range(num_pairs):
+        curve = create_hermite_curve(p[i], v[i], p[i+1],v[i+1],)
+        curve_points = np.asarray([curve(t) for t in t_values[i]])
+        for j in range(np.shape(curve_points)[0]):
+            traj.append(curve_points[j])
+
+    traj_array = np.asarray(traj)
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    for i in range(1,INPUT_SIZE):
+            ax.plot(traj_array[:, 0][i:i + 2],
+                    traj_array[:, 1][i:i + 2],
+                    traj_array[:, 2][i:i + 2],
+                    c=plt.cm.jet(int(np.linalg.norm(traj_array[i]-traj_array[i-1])*255/80)), linewidth=2)
+    plt.show()
+
+def generate_base_traj():
+    # Scale hermitian velocity >1 angry. 1 means a smooth trajectory.
+    v_p =  random.randrange(0,1)
+
+    if v_p < 0.10: #10% of times we have a slow velocity scale
+        scale_v = 0.5
+    elif v_p < 0.80: #70% of times we have a normal velocity scale
+        scale_v = 1
+    elif v_p < 0.95: #15% of times we have a fast velocity scale
+        scale_v = 2
+    else: #5% of times we have a very fast velocity scale
+        scale_v = 3
+
+    ## Generate points
+
+    # First we randomly generate the absolute increment between points
+    num_points = random.randrange(2,5,1)
+    p = []
+    p.append([0,0,0])
+    v = []
+    it = 0
+    for i in range(num_points-1):
+        ix = random.randrange(0, int(200 / (num_points-1)), 1)
+        iy = random.randrange(0, int(200 / (num_points-1)), 1)
+        iz = random.randrange(0, int(200 / (num_points-1)), 1)
+        v.append([ix*scale_v, iy*scale_v, iz*scale_v])
+        p.append([p[i][0]+ix,p[i][1]+iy,p[i][2]+iz])
+        it = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) + it # Total displacement
+    v.append([0,0,0]) # Las point velocity 0
+
+    t_values = []
+    num_tpoints = 0
+    for i in range(num_points-2): # Each segment is assigned points as function of the longitude
+        ip = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1]))
+        num_tpoints += int(ip/it*50)
+        t_values.append(np.linspace(0,1,num_tpoints))
+
+    t_values.append(np.linspace(0,1,50-num_tpoints)) # The rest of points are assigned to the last segment
+
+    generate_hermitian_traj(p,v,t_values)
+
 def policy(state):
     sampled_actions = tf.squeeze(actor_model(state))
     sampled_actions = sampled_actions.numpy()
@@ -208,6 +287,21 @@ for ep in range(total_episodes):
     vel_hist = []
     poss_hist = []
     end_poss_hist = []
+
+    while(1):
+        generate_base_traj()
+
+    while(1):
+        p=[[0,50,20],[50,100,40],[100,200,80]]
+        vx=random.normalvariate(50,50*0.1) # Initial velocity for each point. It is in the same units as the position
+        vy=random.normalvariate(50,50*0.1)
+        vz=random.normalvariate(50,50*0.1)
+        v=[[vx,vy,vz],[vx,vy,vz],[vx,vy,vz]]
+        print("La velocidad es:", vx,vy,vz)
+
+        #generate_hermitian_traj(p,v)
+        time.sleep(1)
+
 
     # Init env and generated_motion
     generated_motion = env.reset(content_motion, style_motion)
