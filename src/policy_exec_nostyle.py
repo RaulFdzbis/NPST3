@@ -116,18 +116,6 @@ def test_trajectories(selected_trajectory):
     else:
         print("Please introduce valid int->0: Straight line; 1: Pick&Place; 2: CMU db trajectory")
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    content_motion_array = np.asarray(content_motion)
-    for i in range(1, INPUT_SIZE):
-        ax.plot(content_motion_array[:, 0][i:i + 2],
-                content_motion_array[:, 1][i:i + 2],
-                content_motion_array[:, 2][i:i + 2],
-                c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/80)),
-                linewidth=2)
-    plt.show()
-    time.sleep(1)
-
     return content_motion
 
 
@@ -201,7 +189,7 @@ def create_hermite_curve(p0,v0,p1,v1):
     PH = P @ H
     return lambda t: np.dot(PH, np.array([1,t,t**2,t**3]))
 
-def generate_hermitian_traj(p,v,t_values, input_size=INPUT_SIZE):
+def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
     #Get num_points
     num_pairs = np.shape(p)[0]-1
 
@@ -215,13 +203,29 @@ def generate_hermitian_traj(p,v,t_values, input_size=INPUT_SIZE):
 
     # Increase traj velocity
     traj_escaled = []
-    escala = 5
-    traj_escaled.append(traj[0]) #Always start at 0
-    for i in range(input_size-1):
-        if (i*escala) < (input_size-1):
-            traj_escaled.append(traj[i*escala])
-        else:
-            traj_escaled.append(traj[-1])
+    if traj_type == "slow":
+        escala = 0.5
+    elif traj_type == "normal":
+        escala = 1
+
+    elif traj_type == "fast":
+        escala = 2
+
+    elif traj_type == "veryfast":
+        escala = 3
+
+    if escala == 0.5:
+        for i in range(input_size):
+            if i%2 == 0:
+                traj_escaled.append(traj[int(i/2)])
+            else:
+                traj_escaled.append([(x+y)/2 for x, y in zip(traj[int((i-1)/2)], traj[int((i-1)/2+1)]) ])
+    else:
+        for i in range(input_size):
+            if (i*escala) < (input_size-1):
+                traj_escaled.append(traj[i*escala])
+            else:
+                traj_escaled.append(traj[-1])
 
     traj_array = np.asarray(traj_escaled)
     traj_array2 = np.asarray(traj)
@@ -230,22 +234,22 @@ def generate_hermitian_traj(p,v,t_values, input_size=INPUT_SIZE):
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    for i in range(1,INPUT_SIZE):
+    for i in range(0,INPUT_SIZE-1):
             ax.plot(traj_array[:, 0][i:i + 2],
                     traj_array[:, 1][i:i + 2],
                     traj_array[:, 2][i:i + 2],
-                    c=plt.cm.jet(int(np.linalg.norm(traj_array[i]-traj_array[i-1])*255/52)), linewidth=2)
+                    c=plt.cm.jet(int(np.linalg.norm(traj_array[i]-traj_array[i+1])*255/52)), linewidth=2)
             print("Current velocity (mm/s) is: ", np.linalg.norm(traj_array[i]-traj_array[i-1])*10)
     for i in range(np.shape(p)[0]):
         ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    for i in range(1,INPUT_SIZE):
+    for i in range(0,INPUT_SIZE-1):
             ax.plot(traj_array2[:, 0][i:i + 2],
                     traj_array2[:, 1][i:i + 2],
                     traj_array2[:, 2][i:i + 2],
-                    c=plt.cm.jet(int(np.linalg.norm(traj_array2[i]-traj_array2[i-1])*255/52)), linewidth=2)
+                    c=plt.cm.jet(int(np.linalg.norm(traj_array2[i]-traj_array2[i+1])*255/52)), linewidth=2)
             print("Current velocity2 (mm/s) is: ", np.linalg.norm(traj_array2[i] - traj_array2[i - 1]) * 10)
     for i in range(np.shape(p)[0]):
         ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
@@ -261,15 +265,19 @@ def generate_base_traj():
 
     if v_p < 0.10: #10% of times we have a slow velocity scale
         scale_v = 0.5
+        traj_type = "slow"
         print("Trayectoria Lenta")
     elif v_p < 0.80: #70% of times we have a normal velocity scale
         scale_v = 1
+        traj_type = "normal"
         print("Trayectoria Normal")
     elif v_p < 0.95: #15% of times we have a fast velocity scale
         scale_v = 2
+        traj_type = "fast"
         print("Trayectoria Rapida")
     else: #5% of times we have a very fast velocity scale
         scale_v = 3
+        traj_type = "veryfast"
         print("Trayectoria Muy Rapida")
 
     ## Generate points
@@ -280,17 +288,23 @@ def generate_base_traj():
     p.append([0,0,0])
     v = []
     it = 0
-    for i in range(num_points-1):
-        ix = random.randrange(0, int(200 / (num_points-1)), 1)
-        iy = random.randrange(0, int(200 / (num_points-1)), 1)
-        iz = random.randrange(0, int(200 / (num_points-1)), 1)
-        if random.random()<0.3: # We make negative moves with a 30% probability (to avoid lot of changes in direction)
+    for i in range(num_points-1): # Length
+        ix = random.randrange(0, int(400 / (num_points-1)), 1)
+        iy = random.randrange(0, int(400 / (num_points-1)), 1)
+        iz = random.randrange(0, int(400 / (num_points-1)), 1)
+        if random.random()<0.5: # We make negative moves with a 30% probability (to avoid lot of changes in direction)
             ix=-ix
-        if random.random()<0.3:
+        if random.random()<0.5:
             iy=-iy
-        if random.random()<0.3:
+        if random.random()<0.5:
             iz=-iz
-        v.append([ix*scale_v, iy*scale_v, iz*scale_v])
+
+        # Make sure we are not out of limits, if we are reduce increments
+        while p[i][0]+ix >= robot_threshold or p[i][1]+iy >= robot_threshold or p[i][2]+iz>= robot_threshold:
+            ix=int(ix/2)
+            iy=int(iy/2)
+            iz=int(iz/2)
+        v.append([ix*scale_v, iy*scale_v, iz*scale_v]) # Tangent velocity
         p.append([p[i][0]+ix,p[i][1]+iy,p[i][2]+iz])
         it = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) + it # Total displacement
     v.append([0,0,0]) # Las point velocity 0
@@ -305,7 +319,7 @@ def generate_base_traj():
 
     t_values.append(np.linspace(0,1,50-total_tpoints)) # The rest of points are assigned to the last segment
 
-    generate_hermitian_traj(p,v,t_values)
+    generate_hermitian_traj(p,v,t_values, traj_type)
 
 def policy(state):
     sampled_actions = tf.squeeze(actor_model(state))
