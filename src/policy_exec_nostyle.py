@@ -30,7 +30,7 @@ robot_threshold = 300  # Absolute max range of robot movements in mm
 generated_scale = 1
 noise_scale = 25
 
-# Velocity bound
+# Velocity bound per step (right now 10Hz so it is uppedbound mm/0.1s)
 upper_bound = 0.1 * robot_threshold
 lower_bound = -0.1 * robot_threshold
 
@@ -213,7 +213,20 @@ def generate_hermitian_traj(p,v,t_values, input_size=INPUT_SIZE):
         for j in range(np.shape(curve_points)[0]):
             traj.append(curve_points[j])
 
-    traj_array = np.asarray(traj)
+    # Increase traj velocity
+    traj_escaled = []
+    escala = 5
+    traj_escaled.append(traj[0]) #Always start at 0
+    for i in range(input_size-1):
+        if (i*escala) < (input_size-1):
+            traj_escaled.append(traj[i*escala])
+        else:
+            traj_escaled.append(traj[-1])
+
+    traj_array = np.asarray(traj_escaled)
+    traj_array2 = np.asarray(traj)
+
+    IPython.embed()
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
@@ -221,21 +234,43 @@ def generate_hermitian_traj(p,v,t_values, input_size=INPUT_SIZE):
             ax.plot(traj_array[:, 0][i:i + 2],
                     traj_array[:, 1][i:i + 2],
                     traj_array[:, 2][i:i + 2],
-                    c=plt.cm.jet(int(np.linalg.norm(traj_array[i]-traj_array[i-1])*255/80)), linewidth=2)
+                    c=plt.cm.jet(int(np.linalg.norm(traj_array[i]-traj_array[i-1])*255/52)), linewidth=2)
+            print("Current velocity (mm/s) is: ", np.linalg.norm(traj_array[i]-traj_array[i-1])*10)
+    for i in range(np.shape(p)[0]):
+        ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    for i in range(1,INPUT_SIZE):
+            ax.plot(traj_array2[:, 0][i:i + 2],
+                    traj_array2[:, 1][i:i + 2],
+                    traj_array2[:, 2][i:i + 2],
+                    c=plt.cm.jet(int(np.linalg.norm(traj_array2[i]-traj_array2[i-1])*255/52)), linewidth=2)
+            print("Current velocity2 (mm/s) is: ", np.linalg.norm(traj_array2[i] - traj_array2[i - 1]) * 10)
+    for i in range(np.shape(p)[0]):
+        ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
+
     plt.show()
+
+
+
 
 def generate_base_traj():
     # Scale hermitian velocity >1 angry. 1 means a smooth trajectory.
-    v_p =  random.randrange(0,1)
+    v_p =  random.random()
 
     if v_p < 0.10: #10% of times we have a slow velocity scale
         scale_v = 0.5
+        print("Trayectoria Lenta")
     elif v_p < 0.80: #70% of times we have a normal velocity scale
         scale_v = 1
+        print("Trayectoria Normal")
     elif v_p < 0.95: #15% of times we have a fast velocity scale
         scale_v = 2
+        print("Trayectoria Rapida")
     else: #5% of times we have a very fast velocity scale
         scale_v = 3
+        print("Trayectoria Muy Rapida")
 
     ## Generate points
 
@@ -249,19 +284,26 @@ def generate_base_traj():
         ix = random.randrange(0, int(200 / (num_points-1)), 1)
         iy = random.randrange(0, int(200 / (num_points-1)), 1)
         iz = random.randrange(0, int(200 / (num_points-1)), 1)
+        if random.random()<0.3: # We make negative moves with a 30% probability (to avoid lot of changes in direction)
+            ix=-ix
+        if random.random()<0.3:
+            iy=-iy
+        if random.random()<0.3:
+            iz=-iz
         v.append([ix*scale_v, iy*scale_v, iz*scale_v])
         p.append([p[i][0]+ix,p[i][1]+iy,p[i][2]+iz])
         it = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) + it # Total displacement
     v.append([0,0,0]) # Las point velocity 0
 
     t_values = []
-    num_tpoints = 0
+    total_tpoints = 0
     for i in range(num_points-2): # Each segment is assigned points as function of the longitude
-        ip = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1]))
-        num_tpoints += int(ip/it*50)
+        ip = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) # Segment Longitude
+        num_tpoints = int((ip/it)*50) # Number of points assigned as a function of the longitude
+        total_tpoints += num_tpoints
         t_values.append(np.linspace(0,1,num_tpoints))
 
-    t_values.append(np.linspace(0,1,50-num_tpoints)) # The rest of points are assigned to the last segment
+    t_values.append(np.linspace(0,1,50-total_tpoints)) # The rest of points are assigned to the last segment
 
     generate_hermitian_traj(p,v,t_values)
 
