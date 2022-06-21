@@ -29,7 +29,6 @@ INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
 generated_scale = 1
 noise_scale = 25
-nerv_generator_scale = 1
 
 # Velocity bound per step (right now 10Hz so it is uppedbound mm/0.1s)
 upper_bound = 0.1 * robot_threshold
@@ -190,8 +189,7 @@ def create_hermite_curve(p0,v0,p1,v1):
     PH = P @ H
     return lambda t: np.dot(PH, np.array([1,t,t**2,t**3]))
 
-def nerv_noise(): #Return random noise
-    nerv_s = nerv_generator_scale
+def nerv_noise(nerv_s): #Return random noise
     return [random.uniform(-nerv_s,nerv_s),random.uniform(-nerv_s,nerv_s),random.uniform(-nerv_s,nerv_s)]
 
 def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
@@ -200,13 +198,10 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
 
     #Define trajectory
     traj = []
-    nervous = 0
     for i in range(num_pairs):
         curve = create_hermite_curve(p[i], v[i], p[i+1],v[i+1])
-        if nervous == 1:
-            curve_points = np.asarray([curve(t)+nerv_noise() for t in t_values[i]])
-        else:
-            curve_points = np.asarray([curve(t) for t in t_values[i]])
+        curve_points = np.asarray([curve(t) for t in t_values[i]])
+
         for j in range(np.shape(curve_points)[0]):
             traj.append(curve_points[j])
 
@@ -220,20 +215,42 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
     elif traj_type == "veryfast":
         escala = 3 #Maybe 5 if we want faster
 
+    nervous = 0
+
+    if (traj_type != "veryfast" and random.random()<1):
+        nervous =1
+
+    # TODO: Add nerv noise taking account slow trajectories are slower and faster trajectories faster.
+    nerv_generator_scale = random.randrange(1,10,1)
+    print("NOISE SCALE IS:", nerv_generator_scale)
+
     traj_escaled = []
     traj_escaled.append([0,0,0])
     if escala == 0.5:
         for i in range(1,input_size):
             if i%2 == 0:
-                traj_escaled.append(traj[int(i/2)])
+                tmp_traj = traj[int(i/2)]
+                if nervous == 0:
+                    traj_escaled.append(tmp_traj)
+                else:
+                    traj_escaled.append([x+y for x, y in zip(tmp_traj, nerv_noise(nerv_generator_scale))])
             else:
-                traj_escaled.append([(x+y)/2 for x, y in zip(traj[int((i-1)/2)], traj[int((i-1)/2+1)])])
+                tmp_traj = [(x+y)/2 for x, y in zip(traj[int((i-1)/2)], traj[int((i-1)/2+1)])]
+                if nervous == 0:
+                    traj_escaled.append(tmp_traj)
+                else:
+                    traj_escaled.append([x+y for x, y in zip(tmp_traj, nerv_noise(nerv_generator_scale))])
     else:
         for i in range(1,input_size):
             if (i*escala) < (input_size-1):
                 ix = traj[i*escala][0]-traj_escaled[-1][0]
                 iy = traj[i*escala][1]-traj_escaled[-1][1]
                 iz = traj[i*escala][2]-traj_escaled[-1][2]
+                if nervous ==1:
+                    nerv_noise_value = nerv_noise(nerv_generator_scale)
+                    ix += nerv_noise_value[0]
+                    iy += nerv_noise_value[1]
+                    iz += nerv_noise_value[2]
                 while(abs(ix) > upper_bound or  abs(iy) > upper_bound or  abs(iz)> upper_bound): #Make sure not outside the max vel
                     ix -= np.sign(ix) # Reduce abs value by 1
                     iy -= np.sign(iy)
@@ -289,7 +306,7 @@ def generate_base_traj():
     # Scale hermitian velocity >1 angry. 1 means a smooth trajectory.
     v_p =  random.random()
 
-    if v_p < 0.10: #10% of times we have a slow velocity scale
+    if v_p < 0.40: #10% of times we have a slow velocity scale
         scale_v = 0.5
         traj_type = "slow"
         print("Trayectoria Lenta")
