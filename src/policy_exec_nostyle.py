@@ -228,9 +228,7 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
                 traj_escaled.append(traj[-1])
 
     traj_array = np.asarray(traj_escaled)
-    traj_array2 = np.asarray(traj)
 
-    IPython.embed()
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
@@ -240,17 +238,6 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
                     traj_array[:, 2][i:i + 2],
                     c=plt.cm.jet(int(np.linalg.norm(traj_array[i]-traj_array[i+1])*255/52)), linewidth=2)
             print("Current velocity (mm/s) is: ", np.linalg.norm(traj_array[i]-traj_array[i-1])*10)
-    for i in range(np.shape(p)[0]):
-        ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
-
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    for i in range(0,INPUT_SIZE-1):
-            ax.plot(traj_array2[:, 0][i:i + 2],
-                    traj_array2[:, 1][i:i + 2],
-                    traj_array2[:, 2][i:i + 2],
-                    c=plt.cm.jet(int(np.linalg.norm(traj_array2[i]-traj_array2[i+1])*255/52)), linewidth=2)
-            print("Current velocity2 (mm/s) is: ", np.linalg.norm(traj_array2[i] - traj_array2[i - 1]) * 10)
     for i in range(np.shape(p)[0]):
         ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
 
