@@ -202,44 +202,75 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
             traj.append(curve_points[j])
 
     # Increase traj velocity
-    traj_escaled = []
     if traj_type == "slow":
         escala = 0.5
     elif traj_type == "normal":
         escala = 1
-
     elif traj_type == "fast":
         escala = 2
-
     elif traj_type == "veryfast":
-        escala = 3
+        escala = 3 #Maybe 5 if we want faster
 
+    #
+    traj_escaled = []
+    traj_escaled.append([0,0,0])
     if escala == 0.5:
-        for i in range(input_size):
+        for i in range(1,input_size):
             if i%2 == 0:
                 traj_escaled.append(traj[int(i/2)])
             else:
-                traj_escaled.append([(x+y)/2 for x, y in zip(traj[int((i-1)/2)], traj[int((i-1)/2+1)]) ])
+                traj_escaled.append([(x+y)/2 for x, y in zip(traj[int((i-1)/2)], traj[int((i-1)/2+1)])])
     else:
-        for i in range(input_size):
+        for i in range(1,input_size):
             if (i*escala) < (input_size-1):
-                traj_escaled.append(traj[i*escala])
+                ix = traj[i*escala][0]-traj_escaled[-1][0]
+                iy = traj[i*escala][1]-traj_escaled[-1][1]
+                iz = traj[i*escala][2]-traj_escaled[-1][2]
+                while(abs(ix) > upper_bound or  abs(iy) > upper_bound or  abs(iz)> upper_bound): #Make sure not outside the max vel
+                    ix -= np.sign(ix) # Reduce abs value by 1
+                    iy -= np.sign(iy)
+                    iz -= np.sign(iz)
+                print(ix,iy,iz)
+                traj_escaled.append([x + y for x, y in zip(traj_escaled[-1], [ix,iy,iz])])
             else:
                 traj_escaled.append(traj[-1])
 
     traj_array = np.asarray(traj_escaled)
+    #traj_array2 = np.asarray(traj)
+
 
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
+    total_vel = 0
+    num_vel_points = 0
     for i in range(0,INPUT_SIZE-1):
             ax.plot(traj_array[:, 0][i:i + 2],
                     traj_array[:, 1][i:i + 2],
                     traj_array[:, 2][i:i + 2],
                     c=plt.cm.jet(int(np.linalg.norm(traj_array[i]-traj_array[i+1])*255/52)), linewidth=2)
-            print("Current velocity (mm/s) is: ", np.linalg.norm(traj_array[i]-traj_array[i-1])*10)
+            current_vel = np.linalg.norm(traj_array[i]-traj_array[i+1])*10
+            print("Current velocity (mm/s) is: ", current_vel)
+            if current_vel != 0.0:
+                total_vel += current_vel
+                num_vel_points += 1
+
+    print("Average velocity is (mm/s):", total_vel/num_vel_points)
     for i in range(np.shape(p)[0]):
         ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
+
+    '''
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    for i in range(0,INPUT_SIZE-1):
+            ax.plot(traj_array2[:, 0][i:i + 2],
+                    traj_array2[:, 1][i:i + 2],
+                    traj_array2[:, 2][i:i + 2],
+                    c=plt.cm.jet(int(np.linalg.norm(traj_array2[i]-traj_array2[i+1])*255/52)), linewidth=2)
+            print("Current velocity2 (mm/s) is: ", np.linalg.norm(traj_array2[i] - traj_array2[i+1]) * 10)
+    for i in range(np.shape(p)[0]):
+        ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
+    '''
 
     plt.show()
 
