@@ -29,6 +29,7 @@ INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
 generated_scale = 1
 noise_scale = 25
+nerv_generator_scale = 1
 
 # Velocity bound per step (right now 10Hz so it is uppedbound mm/0.1s)
 upper_bound = 0.1 * robot_threshold
@@ -189,15 +190,23 @@ def create_hermite_curve(p0,v0,p1,v1):
     PH = P @ H
     return lambda t: np.dot(PH, np.array([1,t,t**2,t**3]))
 
+def nerv_noise(): #Return random noise
+    nerv_s = nerv_generator_scale
+    return [random.uniform(-nerv_s,nerv_s),random.uniform(-nerv_s,nerv_s),random.uniform(-nerv_s,nerv_s)]
+
 def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
     #Get num_points
     num_pairs = np.shape(p)[0]-1
 
     #Define trajectory
     traj = []
+    nervous = 0
     for i in range(num_pairs):
-        curve = create_hermite_curve(p[i], v[i], p[i+1],v[i+1],)
-        curve_points = np.asarray([curve(t) for t in t_values[i]])
+        curve = create_hermite_curve(p[i], v[i], p[i+1],v[i+1])
+        if nervous == 1:
+            curve_points = np.asarray([curve(t)+nerv_noise() for t in t_values[i]])
+        else:
+            curve_points = np.asarray([curve(t) for t in t_values[i]])
         for j in range(np.shape(curve_points)[0]):
             traj.append(curve_points[j])
 
@@ -211,7 +220,6 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
     elif traj_type == "veryfast":
         escala = 3 #Maybe 5 if we want faster
 
-    #
     traj_escaled = []
     traj_escaled.append([0,0,0])
     if escala == 0.5:
@@ -230,7 +238,7 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
                     ix -= np.sign(ix) # Reduce abs value by 1
                     iy -= np.sign(iy)
                     iz -= np.sign(iz)
-                print(ix,iy,iz)
+                #print(ix,iy,iz)
                 traj_escaled.append([x + y for x, y in zip(traj_escaled[-1], [ix,iy,iz])])
             else:
                 traj_escaled.append(traj[-1])
@@ -250,7 +258,7 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size=INPUT_SIZE):
                     traj_array[:, 2][i:i + 2],
                     c=plt.cm.jet(int(np.linalg.norm(traj_array[i]-traj_array[i+1])*255/52)), linewidth=2)
             current_vel = np.linalg.norm(traj_array[i]-traj_array[i+1])*10
-            print("Current velocity (mm/s) is: ", current_vel)
+            #print("Current velocity (mm/s) is: ", current_vel)
             if current_vel != 0.0:
                 total_vel += current_vel
                 num_vel_points += 1
@@ -333,7 +341,8 @@ def generate_base_traj():
         ip = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) # Segment Longitude
         num_tpoints = int((ip/it)*50) # Number of points assigned as a function of the longitude
         total_tpoints += num_tpoints
-        t_values.append(np.linspace(0,1,num_tpoints))
+        t_values.append(np.linspace(0,1,num_tpoints+1)) # 1 point more to remove the last point (see below)
+        np.delete(t_values[i], -1) # Remove the last point since it will be the first of the next segment
 
     t_values.append(np.linspace(0,1,50-total_tpoints)) # The rest of points are assigned to the last segment
 
