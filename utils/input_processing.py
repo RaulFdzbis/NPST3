@@ -23,7 +23,7 @@ def scale_input(raw_motion, threshold):
     return raw_motion_scaled
 
 
-def dataset_input_generator(dataset, input_size, robot_threshold):
+def cmu_dataset_input_generator(dataset, input_size, robot_threshold):
     # Create the inputs for training and testing
     train_data = []
     test_data = []
