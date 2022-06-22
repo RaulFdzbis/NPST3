@@ -96,7 +96,7 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold):
     #traj_array2 = np.asarray(traj)
 
 
-
+    '''
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     total_vel = 0
@@ -115,6 +115,7 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold):
     print("Average velocity is (mm/s):", total_vel/num_vel_points)
     for i in range(np.shape(p)[0]):
         ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
+    '''
 
     '''
     fig = plt.figure()
@@ -129,7 +130,9 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold):
         ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
     '''
 
-    plt.show()
+    #plt.show()
+
+    return traj_array
 
 
 
@@ -141,19 +144,19 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
     if v_p < 0.2: #20% of times we have a slow velocity scale
         scale_v = 0.5
         traj_type = "slow"
-        print("Trayectoria Lenta")
+        #print("Trayectoria Lenta")
     elif v_p < 0.60: #40% of times we have a normal velocity scale
         scale_v = 1
         traj_type = "normal"
-        print("Trayectoria Normal")
+        #print("Trayectoria Normal")
     elif v_p < 0.85: #25% of times we have a fast velocity scale
         scale_v = 2
         traj_type = "fast" #15% of times we have a fast velocity scale
-        print("Trayectoria Rapida")
+        #print("Trayectoria Rapida")
     else: #5% of times we have a very fast velocity scale
         scale_v = 3
         traj_type = "veryfast"
-        print("Trayectoria Muy Rapida")
+        #print("Trayectoria Muy Rapida")
 
     ## Generate points
 
@@ -195,4 +198,6 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
 
     t_values.append(np.linspace(0,1,50-total_tpoints)) # The rest of points are assigned to the last segment
 
-    generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold)
+    traj_array = generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold)
+
+    return traj_array
