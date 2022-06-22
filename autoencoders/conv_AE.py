@@ -2,20 +2,21 @@
 #                       Neural Policy Style Transfer TD3 (NPST3) 
 #                                Autoencoder training
 # ----------------------------------------------------------------------------------------
-
+import numpy as np
 from keras.layers import Input, Conv1D, MaxPooling1D, UpSampling1D, Dropout
 from keras.models import Model
-from keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
 from keras.callbacks import TensorBoard
-import pickle
 import sys
 sys.path.append('../')
-from utils import input_processing
+from src import herm_traj_generator
 
 
 # Params
 INPUT_SIZE = 50
 robot_threshold = 300
+upper_bound = 0.1 * robot_threshold
+lower_bound = -0.1 * robot_threshold
 
 # Input
 input_motion = Input(shape=(INPUT_SIZE,3))
@@ -42,13 +43,19 @@ decoder_layer = autoencoder.layers[-1]
 decoder = Model(encoded_input, decoder_layer(encoded_input))
 
 
-# load dataset
-with open('../dataset/NPST3_dataset.pickle', 'rb') as data:
-    marker_data = pickle.load(data)
+# create dataset
+train_data = []
+test_data = []
+train_data_size = 100000
+test_data_size = 10000
+for i in range(train_data_size):
+    train_data.append(herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound))
 
-# Create the inputs for training and testing
-train_data, test_data = input_processing.dataset_input_generator(marker_data, INPUT_SIZE, robot_threshold)
+for i in range(test_data_size):
+    test_data.append(herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound))
 
+train_data = np.asarray(train_data)
+test_data = np.asarray(test_data)
 autoencoder.fit(train_data, train_data,
                 epochs=1000,
                 batch_size=256,
