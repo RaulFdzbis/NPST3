@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------------------
 #                       Neural Policy Style Transfer TD3 (NPST3) 
-#                                 Input Generator
+#                                 Input Processor
 # ----------------------------------------------------------------------------------------
 import numpy as np
 #import IPython
