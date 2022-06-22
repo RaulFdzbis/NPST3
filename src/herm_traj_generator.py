@@ -138,17 +138,17 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
     # Scale hermitian velocity >1 angry. 1 means a smooth trajectory.
     v_p =  random.random()
 
-    if v_p < 0.10: #10% of times we have a slow velocity scale
+    if v_p < 0.2: #20% of times we have a slow velocity scale
         scale_v = 0.5
         traj_type = "slow"
         print("Trayectoria Lenta")
-    elif v_p < 0.80: #70% of times we have a normal velocity scale
+    elif v_p < 0.60: #40% of times we have a normal velocity scale
         scale_v = 1
         traj_type = "normal"
         print("Trayectoria Normal")
-    elif v_p < 0.95: #15% of times we have a fast velocity scale
+    elif v_p < 0.85: #25% of times we have a fast velocity scale
         scale_v = 2
-        traj_type = "fast"
+        traj_type = "fast" #15% of times we have a fast velocity scale
         print("Trayectoria Rapida")
     else: #5% of times we have a very fast velocity scale
         scale_v = 3
