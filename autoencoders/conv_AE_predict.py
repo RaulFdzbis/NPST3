@@ -10,13 +10,16 @@ from mpl_toolkits.mplot3d import Axes3D
 import sys
 sys.path.append('../')
 from utils import input_processing
+from src import herm_traj_generator
+import IPython
 
 # Params
 INPUT_SIZE = 50
 robot_threshold = 300
+upper_bound = robot_threshold * 0.1
 
 # Load the Autoencoder
-autoencoder = load_model("./trained-models/autoencoder.h5")
+autoencoder = load_model("./trained-models/27-06-22/autoencoder.h5")
 
 # Uncomment for using the dataset
 '''
@@ -29,30 +32,48 @@ train_data, test_data = input_processing.dataset_input_generator(marker_data, IN
 input_motion = np.expand_dims(test_data[2], axis=0) #choose any trajectory of the test_dataset
 '''
 
-# Simple example
-content_motion = np.loadtxt("./../src/test-trajectories/line-test.txt", delimiter=" ")  # WARNING: array of arrays
-content_motion = content_motion - content_motion[0]
-content_motion = content_motion * robot_threshold
-input_motion = np.expand_dims(content_motion, axis=0)
+# Input Generator
+#input_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound)
+#input_motion = np.expand_dims(input_motion, axis=0) # To adapt to the input of the network
+
+#decoded_motion = autoencoder.predict(input_motion)
+
+# Read from file
+#IPython.embed()
+
+input_motion = []
+n_data = 0
+with open("./data/5.log") as f:
+    for idx, line in enumerate(f):
+    	if idx!= 0 and idx!=1:
+    	    if (idx-2)%10 == 0 and n_data<50:
+                n_data += 1
+                line = line.split(" ")
+                input_motion.append([float(line[1])*1000, float(line[2])*1000, float(line[3])*1000])
+input_motion = np.expand_dims(input_motion, axis=0) # To adapt to the input of the network
 
 decoded_motion = autoencoder.predict(input_motion)
+
+#IPython.embed()
+
+
 
 # Inplut plot
 fig = plt.figure()
 ax = fig.gca(projection='3d')
-ax.plot(content_motion[:,0], content_motion[:,1], content_motion[:,2], label='original')
-ax.set_xlim([-robot_threshold, robot_threshold])
-ax.set_ylim([-robot_threshold, robot_threshold])
-ax.set_zlim([-robot_threshold, robot_threshold])
+ax.plot(input_motion[0][:,0], input_motion[0][:,1], input_motion[0][:,2], label='original')
+ax.set_xlim([-robot_threshold*2, robot_threshold*2])
+ax.set_ylim([-robot_threshold*2, robot_threshold*2])
+ax.set_zlim([-robot_threshold*2, robot_threshold*2])
 plt.show()
 
 # Decoded plot
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.plot(decoded_motion[0][:,0], decoded_motion[0][:,1], decoded_motion[0][:,2], label='decoded')
-ax.set_xlim([-robot_threshold, robot_threshold])
-ax.set_ylim([-robot_threshold, robot_threshold])
-ax.set_zlim([-robot_threshold, robot_threshold])
+ax.set_xlim([-robot_threshold*2, robot_threshold*2])
+ax.set_ylim([-robot_threshold*2, robot_threshold*2])
+ax.set_zlim([-robot_threshold*2, robot_threshold*2])
 plt.show()
 
 
