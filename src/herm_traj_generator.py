@@ -160,7 +160,7 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
 
     ## Generate points
 
-    # First we randomly generate the absolute increment between points
+    # First we randomly generate the principal points
     num_points = random.randrange(2,5,1)
     p = []
     p.append([0,0,0])
@@ -170,7 +170,7 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
         ix = random.randrange(0, int(400 / (num_points-1)), 1)
         iy = random.randrange(0, int(400 / (num_points-1)), 1)
         iz = random.randrange(0, int(400 / (num_points-1)), 1)
-        if random.random()<0.5: # We make negative moves with a 30% probability (to avoid lot of changes in direction)
+        if random.random()<0.5: # We make negative moves with a 50% probability
             ix=-ix
         if random.random()<0.5:
             iy=-iy
@@ -182,7 +182,17 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
             ix=int(ix/2)
             iy=int(iy/2)
             iz=int(iz/2)
-        v.append([ix*scale_v, iy*scale_v, iz*scale_v]) # Tangent velocity
+        ix_scaled = ix * scale_v
+        iy_scaled = iy * scale_v
+        iz_scaled = iz * scale_v
+        if random.random()<0.8:
+            v.append([ix_scaled+np.random.normal(ix_scaled,ix_scaled*0.1),
+                      iy_scaled+np.random.normal(iy_scaled,iy_scaled*0.1),
+                      iz_scaled+np.random.normal(iz_scaled,iz_scaled*0.1)]) # Tangent velocity
+        else: #Random velocity value
+            v.append([random.randrange(-vel_threshold, vel_threshold, 1),
+                      random.randrange(-vel_threshold, vel_threshold, 1),
+                      random.randrange(-vel_threshold, vel_threshold, 1)])
         p.append([p[i][0]+ix,p[i][1]+iy,p[i][2]+iz])
         it = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) + it # Total displacement
     v.append([0,0,0]) # Las point velocity 0
