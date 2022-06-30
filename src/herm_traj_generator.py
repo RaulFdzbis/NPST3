@@ -185,17 +185,21 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
         ix_scaled = ix * scale_v
         iy_scaled = iy * scale_v
         iz_scaled = iz * scale_v
-        if random.random()<0.8:
-            v.append([ix_scaled+np.random.normal(ix_scaled,ix_scaled*0.1),
-                      iy_scaled+np.random.normal(iy_scaled,iy_scaled*0.1),
-                      iz_scaled+np.random.normal(iz_scaled,iz_scaled*0.1)]) # Tangent velocity
+        if random.random()<0.8: # Optimal velocity with some noise
+            v.append([np.random.normal(ix_scaled,abs(ix_scaled*0.2)),
+                      np.random.normal(iy_scaled,abs(iy_scaled*0.2)),
+                      np.random.normal(iz_scaled,abs(iz_scaled*0.2))]) # Tangent velocity
         else: #Random velocity value
             v.append([random.randrange(-vel_threshold, vel_threshold, 1),
                       random.randrange(-vel_threshold, vel_threshold, 1),
                       random.randrange(-vel_threshold, vel_threshold, 1)])
         p.append([p[i][0]+ix,p[i][1]+iy,p[i][2]+iz])
         it = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) + it # Total displacement
-    v.append([0,0,0]) # Las point velocity 0
+
+    v.append([np.random.normal(ix_scaled/2, abs(ix_scaled * 0.2)),
+              np.random.normal(iy_scaled/2, abs(iy_scaled * 0.2)),
+              np.random.normal(iz_scaled/2, abs(iz_scaled * 0.2))])  # Tangent velocity
+    print("El array de velocidades es:", v)
 
     t_values = []
     total_tpoints = 0
