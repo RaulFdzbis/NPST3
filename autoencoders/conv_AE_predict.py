@@ -19,7 +19,8 @@ robot_threshold = 300
 upper_bound = robot_threshold * 0.1
 
 # Load the Autoencoder
-autoencoder = load_model("./trained-models/27-06-22/autoencoder.h5")
+autoencoder = load_model("./trained-models/01-07-22/autoencoder.h5")
+#autoencoder = load_model("./trained-models/autoencoder.h5")
 
 # Uncomment for using the dataset
 '''
@@ -32,14 +33,17 @@ train_data, test_data = input_processing.dataset_input_generator(marker_data, IN
 input_motion = np.expand_dims(test_data[2], axis=0) #choose any trajectory of the test_dataset
 '''
 
+'''
 # Input Generator
-#input_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound)
-#input_motion = np.expand_dims(input_motion, axis=0) # To adapt to the input of the network
+input_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound)
+input_motion = np.expand_dims(input_motion, axis=0) # To adapt to the input of the network
 
-#decoded_motion = autoencoder.predict(input_motion)
+decoded_motion = autoencoder.predict(input_motion)
 
 # Read from file
 #IPython.embed()
+'''
+
 
 input_motion = []
 n_data = 0
@@ -51,10 +55,13 @@ with open("./data/5.log") as f:
                 line = line.split(" ")
                 input_motion.append([float(line[1])*1000, float(line[2])*1000, float(line[3])*1000])
 input_motion = np.expand_dims(input_motion, axis=0) # To adapt to the input of the network
+input_motion = input_motion - input_motion[0][0]
+input_motion = np.clip(input_motion, -robot_threshold, robot_threshold)
 
 decoded_motion = autoencoder.predict(input_motion)
 
 #IPython.embed()
+
 
 
 
@@ -65,7 +72,7 @@ ax.plot(input_motion[0][:,0], input_motion[0][:,1], input_motion[0][:,2], label=
 ax.set_xlim([-robot_threshold*2, robot_threshold*2])
 ax.set_ylim([-robot_threshold*2, robot_threshold*2])
 ax.set_zlim([-robot_threshold*2, robot_threshold*2])
-plt.show()
+#plt.show()
 
 # Decoded plot
 fig = plt.figure()
