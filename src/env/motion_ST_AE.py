@@ -40,7 +40,7 @@ class ae_env():
         self.ws = 0.2 # Ref tabla loss 0.02
         self.wp = 10 # End pos Ref tabla loss 100
         self.wv = 1 # Ref tabla loss 0.1
-        self.wpc = 0.01*(1e-5) # DTW pos Ref tabla loss 0.1
+        self.wpc = 0.01*(1e-5) # DTW pos Ref tabla loss 0.1*(1e-5)
 
         # Debug
         self.tcl = 0
@@ -134,7 +134,6 @@ class ae_env():
             input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
             generated_outputs = self.ae_outputs([input_generated_motion])
             
-            IPython.embed()
 
             # Generated raw outputs (No warp)
             #input_generated_motion_2 = input_processing.input_generator(self.generated_motion, self.input_size)  # generated_motion to NN friendly array for input
