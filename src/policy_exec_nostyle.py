@@ -43,7 +43,7 @@ total_episodes = 3
 actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5") # Actor
 
 # Path to AE
-ae_path = "./../autoencoders/trained-models/autoencoder.h5"
+ae_path = "./../autoencoders/trained-models/01-07-22/autoencoder.h5"
 
 style_data = []
 file_list = sorted(os.listdir("./styles"))
@@ -73,109 +73,6 @@ style_motion = selected_styles[args.style]
 style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
-
-def test_trajectories(selected_trajectory):
-    if selected_trajectory==0: #Straight line
-        content_motion = []
-        content_motion.append([0, 0, 0])
-        for j in range(INPUT_SIZE-1):
-            content_motion.append([content_motion[j][0]+50/200,content_motion[j][1]+50/200,content_motion[j][2]+50/200])
-
-    elif selected_trajectory==1: #Pick and place task
-        content_motion = []
-        content_motion.append([0, 0, 0])
-        # Simple pick&place task
-        # x
-        c_x_0 = np.linspace(0, 0, num=15)
-        c_x_1 = np.linspace(0, 150, num=20)
-        c_x_2 = np.linspace(150, 150, num=15)
-        c_x = np.concatenate((c_x_0, c_x_1, c_x_2)).reshape(-1, 1)
-        # y
-        c_y_0 = np.linspace(0, 0, num=15)
-        c_y_1 = np.linspace(0, 150, num=20)
-        c_y_2 = np.linspace(150, 150, num=15)
-        c_y = np.concatenate((c_y_0, c_y_1, c_y_2)).reshape(-1, 1)
-        # z
-        c_z_0 = np.linspace(0, 100, num=15)
-        c_z_1 = np.linspace(100, 100, num=20)
-        c_z_2 = np.linspace(100, 0, num=15)
-        c_z = np.concatenate((c_z_0, c_z_1, c_z_2)).reshape(-1, 1)
-        content_motion = c_x
-        content_motion = np.append(content_motion, c_y, axis=1)
-        content_motion = np.append(content_motion, c_z, axis=1)
-
-    elif selected_trajectory==2: # "free" randomly generated trajectory
-        content_motion = []
-        # Generate random trajectory
-        s_z = np.arange(0,100,2)
-        s_x = np.sin(s_z*2*np.pi/100)*100; # Full normalized sine period escaled *100
-        s_y = np.cos(s_z*2*np.pi/100)*100; # Full normalized cosine period escaled *100
-
-        for j in range(INPUT_SIZE):
-            content_motion.append([s_x[j],s_y[j],s_z[j]])
-
-    else:
-        print("Please introduce valid int->0: Straight line; 1: Pick&Place; 2: CMU db trajectory")
-
-    return content_motion
-
-
-def generate_content_pp():
-    # Simple straight line
-    # c_x=np.linspace(0,20,num=50).reshape(-1,1) #Generate 1 column array
-    # c_y=np.linspace(0,200,num=50).reshape(-1,1)
-    # c_z=np.linspace(0,50,num=50).reshape(-1,1)
-
-    # Simple pick&place task randomly generated
-
-    # Select random seed for the generation of the content
-    content_motion = []
-    content_motion.append([0, 0, 0])
-
-    # First section "pick"
-    pick_z_vel = 10;
-    num_pick_points = 9
-    current_point = copy.deepcopy(content_motion[0])
-    # IPython.embed()
-    for i in range(num_pick_points):
-        current_point[2] = current_point[2] + pick_z_vel
-        content_motion.append(copy.deepcopy(current_point))
-
-
-    # Second section "move"
-    num_move_points = 30;
-
-    # Compute distances for x,y,z
-    var = 100
-    dx = np.clip(np.random.normal(150, var), 0, robot_threshold)
-    y_max = np.sqrt(max(0, robot_threshold ** 2 - dx ** 2))
-    dy = np.clip(np.random.normal(y_max, var), 0, y_max)
-    z_max = np.sqrt(max(0, robot_threshold ** 2 - dx ** 2 - dy ** 2))
-    dz = np.clip(np.random.normal(0, var), 0, z_max)
-
-    # Compute x,y,z
-    x = dx if random.random() < 0.5 else -dx
-    y = dy if random.random() < 0.5 else -dy
-    z = dz  # No negative z
-
-    # Generate move section
-    for i in range(num_move_points):
-        current_point[0] = current_point[0] + x / num_move_points
-        current_point[1] = current_point[1] + y / num_move_points
-        current_point[2] = current_point[2] + z / num_move_points
-        content_motion.append(copy.deepcopy(current_point))
-
-    # Third section "place"
-    place_z_vel = 10;
-    num_place_points = 10
-
-    for i in range(num_place_points):
-        current_point[2] = current_point[2] - place_z_vel
-        content_motion.append(copy.deepcopy(current_point))
-
-    return content_motion
-
-
 def policy(state):
     sampled_actions = tf.squeeze(actor_model(state))
     sampled_actions = sampled_actions.numpy()
@@ -199,36 +96,13 @@ for ep in range(total_episodes):
     poss_hist = []
     end_poss_hist = []
 
-    while(1):
-        herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound)
-
-    while(1):
-        p=[[0,50,20],[50,100,40],[100,200,80]]
-        vx=random.normalvariate(50,50*0.1) # Initial velocity for each point. It is in the same units as the position
-        vy=random.normalvariate(50,50*0.1)
-        vz=random.normalvariate(50,50*0.1)
-        v=[[vx,vy,vz],[vx,vy,vz],[vx,vy,vz]]
-        print("La velocidad es:", vx,vy,vz)
-
-        #generate_hermitian_traj(p,v)
-        time.sleep(1)
-
+    #while(1):
+    content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound)
 
     # Init env and generated_motion
     generated_motion = env.reset(content_motion, style_motion)
     episodic_reward = 0
-
-    if ep == 0:
-        content_motion = test_trajectories(0)
-
-    elif ep == 1:
-        content_motion = test_trajectories(1)
-
-    elif ep == 2:
-        content_motion = test_trajectories(2)
-    else:
-        content_motion = generate_content_pp()
-
+    
     # Generate Content motion
     tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
     # content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
