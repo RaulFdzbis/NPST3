@@ -88,7 +88,7 @@ content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_thresho
 env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
 env2 = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path_2)
 
-content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
+#content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
 
 for ep in range(total_episodes):
     # reward history
@@ -102,6 +102,8 @@ for ep in range(total_episodes):
     vel_hist2 = []
     poss_hist2 = []
     end_poss_hist2 = []
+
+    content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
 
     # Init env and generated_motion
     generated_motion = env.reset(content_motion, style_motion)
@@ -145,6 +147,7 @@ for ep in range(total_episodes):
         action = policy(tf_prev_state)
         #print(action)
 
+        '''
         # Hard coded action
         if ep == 0:
             escala = 1
@@ -156,6 +159,7 @@ for ep in range(total_episodes):
             alignment = dtw(content_motion, style_motion, keep_internals=True)
             wq = warp(alignment, index_reference=False)  # Find the warped trajectory
             warped_g = np.asarray(content_motion)[wq]
+            warped_g = np.append(warped_g, [np.asarray(content_motion)[-1]], axis=0) #Add last point to warping (warp dont do this)
             g_x = [i[0] for i in warped_g]
             g_y = [i[1] for i in warped_g]
             g_z = [i[2] for i in warped_g]
@@ -176,6 +180,7 @@ for ep in range(total_episodes):
         	#action = [-x for x in action] #Negate action
         else:
             action = [0,0,0]
+        '''
         	
         
         # Receive state and reward from environment.
@@ -255,11 +260,13 @@ for ep in range(total_episodes):
     ax.axes.set_zlim3d(bottom=-robot_threshold, top=robot_threshold)
     #Velocity scaled to a maximum of 0.8m/s
     for i in range(0,INPUT_SIZE-1):
-            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/80)), linewidth=2)
+        if (np.linalg.norm(generated_motion_array[i]-generated_motion_array[i+1]) != 0):
+            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i+1])*255/80)), linewidth=6)
             #print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
-            ##print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
+            #print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
             #print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
             #print("Velocity loss: ", vel_hist[i-1])
-            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i-1])*255/80)), linewidth=2)
+        if (np.linalg.norm(content_motion_array[i]-content_motion_array[i+1]) != 0):
+            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i+1])*255/80)), linewidth=2)
             #ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/80)), linewidth=2)
     plt.show()

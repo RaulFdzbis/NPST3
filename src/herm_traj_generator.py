@@ -178,13 +178,13 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
             iz=-iz
 
         # Make sure we are not out of limits, if we are reduce increments
-        while p[i][0]+ix >= robot_threshold or p[i][1]+iy >= robot_threshold or p[i][2]+iz>= robot_threshold:
-            ix=int(ix/2)
-            iy=int(iy/2)
-            iz=int(iz/2)
         ix_scaled = ix * scale_v
         iy_scaled = iy * scale_v
         iz_scaled = iz * scale_v
+        while p[i][0]+ix_scaled >= robot_threshold or p[i][1]+iy_scaled >= robot_threshold or p[i][2]+iz_scaled>= robot_threshold:
+            ix_scaled=int(ix/2)
+            iy_scaled=int(iy/2)
+            iz_scaled=int(iz/2)
         if random.random()<0.8: # Optimal velocity with some noise
             v.append([np.random.normal(ix_scaled,abs(ix_scaled*0.2)),
                       np.random.normal(iy_scaled,abs(iy_scaled*0.2)),

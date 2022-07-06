@@ -121,7 +121,7 @@ class ae_env():
             if (np.shape(warped_g)[0]>50):
                 print("ERROR WARPED TRAJECTORY TOO LONG")
             print("Trajectory is: ", self.content_motion)
-            print("Trajectory generated is: ", warped_g)
+            print("Trajectory generated warped is: ", warped_g)
 
             input_generated_motion = input_processing.input_generator(warped_g, self.input_size)  # generated_motion to NN friendly array for input
 
