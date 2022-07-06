@@ -33,7 +33,7 @@ noise_scale = 25
 upper_bound = 0.1 * robot_threshold
 lower_bound = -0.1 * robot_threshold
 
-total_episodes = 4
+total_episodes = 1000
 
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
@@ -147,7 +147,7 @@ for ep in range(total_episodes):
         action = policy(tf_prev_state)
         #print(action)
 
-        '''
+
         # Hard coded action
         if ep == 0:
             escala = 1
@@ -180,12 +180,12 @@ for ep in range(total_episodes):
         	#action = [-x for x in action] #Negate action
         else:
             action = [0,0,0]
-        '''
+
         	
         
         # Receive state and reward from environment.
-        generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
-        generated_motion2, reward2, cl2, sl2, vel_loss2, pos_loss_cont2, pos_loss2, done2 = env2.step(action, content_motion)
+        generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done, warped_traj = env.step(action, content_motion)
+        generated_motion2, reward2, cl2, sl2, vel_loss2, pos_loss_cont2, pos_loss2, done2, warped_traj = env2.step(action, content_motion)
 
         
 
@@ -228,10 +228,12 @@ for ep in range(total_episodes):
     content_motion_array = np.asarray(content_motion)
     generated_motion_array = np.asarray(generated_motion)
     style_motion_array = np.asarray(style_motion)
+    warped_traj_array = np.asarray(warped_traj)
 
     # Do some plotting
 
     # Losses
+    plt.figure()
     plt.plot(np.linspace(1, 49, num=49), cl_hist, label="content_loss")
     plt.plot(np.linspace(1, 49, num=49), sl_hist, label="style_loss")
     plt.plot(np.linspace(1, 49, num=49), poss_hist, label="poss_loss")
@@ -259,13 +261,22 @@ for ep in range(total_episodes):
     ax.axes.set_ylim3d(bottom=-robot_threshold, top=robot_threshold)
     ax.axes.set_zlim3d(bottom=-robot_threshold, top=robot_threshold)
     #Velocity scaled to a maximum of 0.8m/s
+
+    print("Content is: ", content_motion)
+    print("Generated is: ", generated_motion_array)
+    print("Warped is: ", warped_traj)
     for i in range(0,INPUT_SIZE-1):
         if (np.linalg.norm(generated_motion_array[i]-generated_motion_array[i+1]) != 0):
-            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i+1])*255/80)), linewidth=6)
+            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i+1])*255/80)), linewidth=2)
             #print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
             #print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
             #print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
             #print("Velocity loss: ", vel_hist[i-1])
+
+        if (np.linalg.norm(content_motion_array[i]-content_motion_array[i+1]) != 0):
+            ax.plot(warped_traj_array[:, 0][i:i + 2], warped_traj_array[:, 1][i:i + 2], warped_traj_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(warped_traj_array[i]-warped_traj_array[i+1])*255/80)), linewidth=6)
+
+
         if (np.linalg.norm(content_motion_array[i]-content_motion_array[i+1]) != 0):
             ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i+1])*255/80)), linewidth=2)
             #ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/80)), linewidth=2)

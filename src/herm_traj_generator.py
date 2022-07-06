@@ -5,8 +5,10 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import IPython
 
-def create_hermite_curve(p0,v0,p1,v1):
+
+def create_hermite_curve(p0, v0, p1, v1):
     # Define constant H
     H = np.array([
         [1, 0, -3, 2],
@@ -17,21 +19,23 @@ def create_hermite_curve(p0,v0,p1,v1):
     """
     Creates a hermite curve between two points with given tangents
     """
-    P = np.array([p0,v0,v1,p1]).transpose()
+    P = np.array([p0, v0, v1, p1]).transpose()
     PH = P @ H
-    return lambda t: np.dot(PH, np.array([1,t,t**2,t**3]))
+    return lambda t: np.dot(PH, np.array([1, t, t ** 2, t ** 3]))
 
-def nerv_noise(nerv_s): #Return random noise
-    return [random.uniform(-nerv_s,nerv_s),random.uniform(-nerv_s,nerv_s),random.uniform(-nerv_s,nerv_s)]
 
-def generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold):
-    #Get num_points
-    num_pairs = np.shape(p)[0]-1
+def nerv_noise(nerv_s):  # Return random noise
+    return [random.uniform(-nerv_s, nerv_s), random.uniform(-nerv_s, nerv_s), random.uniform(-nerv_s, nerv_s)]
 
-    #Define trajectory
+
+def generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_threshold, vel_threshold):
+    # Get num_points
+    num_pairs = np.shape(p)[0] - 1
+
+    # Define trajectory
     traj = []
     for i in range(num_pairs):
-        curve = create_hermite_curve(p[i], v[i], p[i+1],v[i+1])
+        curve = create_hermite_curve(p[i], v[i], p[i + 1], v[i + 1])
         curve_points = np.asarray([curve(t) for t in t_values[i]])
 
         for j in range(np.shape(curve_points)[0]):
@@ -45,56 +49,59 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold):
     elif traj_type == "fast":
         escala = 2
     elif traj_type == "veryfast":
-        escala = 3 #Maybe 5 if we want faster
+        escala = 3  # Maybe 5 if we want faster
 
     nervous = 0
 
-    if (traj_type != "veryfast" and random.random()<0.2): # 20% of the trajectories are nervous ones
-        nervous =1
+    if (traj_type != "veryfast" and random.random() < 0.2):  # 20% of the trajectories are nervous ones
+        nervous = 1
 
     # The noise scale is random and defined as a function of the vel scale
-    nerv_generator_scale = random.randrange(1,10,1)*escala
-    #print("NOISE SCALE IS:", nerv_generator_scale)
+    nerv_generator_scale = random.randrange(1, 10, 1) * escala
+    # print("NOISE SCALE IS:", nerv_generator_scale)
 
     traj_escaled = []
-    traj_escaled.append([0,0,0])
+    traj_escaled.append([0, 0, 0])
     if escala == 0.5:
-        for i in range(1,input_size):
-            if i%2 == 0:
-                tmp_traj = traj[int(i/2)]
+        for i in range(1, input_size):
+            if i % 2 == 0:
+                tmp_traj = traj[int(i / 2)]
                 if nervous == 0:
                     traj_escaled.append(tmp_traj)
                 else:
-                    traj_escaled.append([x+y for x, y in zip(tmp_traj, nerv_noise(nerv_generator_scale))])
+                    tmp_point = [x + y for x, y in zip(tmp_traj, nerv_noise(nerv_generator_scale))] # Add noise
+                    traj_escaled.append(np.clip(tmp_point, -robot_threshold, robot_threshold)) # Make sure within limits
             else:
-                tmp_traj = [(x+y)/2 for x, y in zip(traj[int((i-1)/2)], traj[int((i-1)/2+1)])]
+                tmp_traj = [(x + y) / 2 for x, y in zip(traj[int((i - 1) / 2)], traj[int((i - 1) / 2 + 1)])]
                 if nervous == 0:
                     traj_escaled.append(tmp_traj)
                 else:
-                    traj_escaled.append([x+y for x, y in zip(tmp_traj, nerv_noise(nerv_generator_scale))])
+                    tmp_point = [x + y for x, y in zip(tmp_traj, nerv_noise(nerv_generator_scale))]
+                    traj_escaled.append(np.clip(tmp_point, -robot_threshold, robot_threshold))
     else:
-        for i in range(1,input_size):
-            if (i*escala) < (input_size-1):
-                ix = traj[i*escala][0]-traj_escaled[-1][0]
-                iy = traj[i*escala][1]-traj_escaled[-1][1]
-                iz = traj[i*escala][2]-traj_escaled[-1][2]
-                if nervous ==1:
+        for i in range(1, input_size):
+            if (i * escala) < (input_size - 1):
+                ix = traj[i * escala][0] - traj_escaled[i-1][0] # Increment = next traj point - current traj_escaled point
+                iy = traj[i * escala][1] - traj_escaled[i-1][1]
+                iz = traj[i * escala][2] - traj_escaled[i-1][2]
+                if nervous == 1:
                     nerv_noise_value = nerv_noise(nerv_generator_scale)
-                    ix += nerv_noise_value[0]
+                    ix += nerv_noise_value[0] #Add noise to increments
                     iy += nerv_noise_value[1]
                     iz += nerv_noise_value[2]
-                while(abs(ix) > vel_threshold or  abs(iy) > vel_threshold or  abs(iz)> vel_threshold): #Make sure not outside the max vel
-                    ix -= np.sign(ix) # Reduce abs value by 1
+                while (abs(ix) > vel_threshold or abs(iy) > vel_threshold or abs(
+                        iz) > vel_threshold):  # Make sure not outside the max vel
+                    ix -= np.sign(ix)  # Reduce abs value of ix by 1
                     iy -= np.sign(iy)
                     iz -= np.sign(iz)
-                #print(ix,iy,iz)
-                traj_escaled.append([x + y for x, y in zip(traj_escaled[-1], [ix,iy,iz])])
+                # print(ix,iy,iz)
+                tmp_point = [x + y for x, y in zip(traj_escaled[-1], [ix, iy, iz])] # Add noise
+                traj_escaled.append(np.clip(tmp_point, -robot_threshold, robot_threshold))
             else:
                 traj_escaled.append(traj[-1])
 
     traj_array = np.asarray(traj_escaled)
-    #traj_array2 = np.asarray(traj)
-
+    # traj_array2 = np.asarray(traj)
 
     '''
     fig = plt.figure()
@@ -130,88 +137,89 @@ def generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold):
         ax.scatter(p[i][0], p[i][1], p[i][2],color = 'red')
     '''
 
-    #plt.show()
+    # plt.show()
+
+    #if np.any(traj_array>robot_threshold) or np.any(traj_array<-robot_threshold):
+    #    IPython.embed()
 
     return traj_array
 
 
-
-
 def generate_base_traj(input_size, robot_threshold, vel_threshold):
     # Scale hermitian velocity >1 angry. 1 means a smooth trajectory.
-    v_p =  random.random()
+    v_p = random.random()
 
-    if v_p < 0.2: #20% of times we have a slow velocity scale
+    if v_p < 0.2:  # 20% of times we have a slow velocity scale
         scale_v = 0.5
         traj_type = "slow"
-        #print("Trayectoria Lenta")
-    elif v_p < 0.60: #40% of times we have a normal velocity scale
+        # print("Trayectoria Lenta")
+    elif v_p < 0.60:  # 40% of times we have a normal velocity scale
         scale_v = 1
         traj_type = "normal"
-        #print("Trayectoria Normal")
-    elif v_p < 0.85: #25% of times we have a fast velocity scale
+        # print("Trayectoria Normal")
+    elif v_p < 0.85:  # 25% of times we have a fast velocity scale
         scale_v = 2
-        traj_type = "fast" #15% of times we have a fast velocity scale
-        #print("Trayectoria Rapida")
-    else: #5% of times we have a very fast velocity scale
+        traj_type = "fast"  # 15% of times we have a fast velocity scale
+        # print("Trayectoria Rapida")
+    else:  # 5% of times we have a very fast velocity scale
         scale_v = 3
         traj_type = "veryfast"
-        #print("Trayectoria Muy Rapida")
+        # print("Trayectoria Muy Rapida")
 
     ## Generate points
 
     # First we randomly generate the principal points
-    num_points = random.randrange(2,5,1)
+    num_points = random.randrange(2, 5, 1)
     p = []
-    p.append([0,0,0])
+    p.append([0, 0, 0])
     v = []
     it = 0
-    for i in range(num_points-1): # Length
-        ix = random.randrange(0, int(400 / (num_points-1)), 1)
-        iy = random.randrange(0, int(400 / (num_points-1)), 1)
-        iz = random.randrange(0, int(400 / (num_points-1)), 1)
-        if random.random()<0.5: # We make negative moves with a 50% probability
-            ix=-ix
-        if random.random()<0.5:
-            iy=-iy
-        if random.random()<0.5:
-            iz=-iz
+    for i in range(num_points - 1):  # Length
+        ix = random.randrange(0, int(robot_threshold*1.5 / (num_points - 1)), 1)
+        iy = random.randrange(0, int(robot_threshold*1.5 / (num_points - 1)), 1)
+        iz = random.randrange(0, int(robot_threshold*1.5 / (num_points - 1)), 1)
+        if random.random() < 0.5:  # We make negative moves with a 50% probability
+            ix = -ix
+        if random.random() < 0.5:
+            iy = -iy
+        if random.random() < 0.5:
+            iz = -iz
 
         # Make sure we are not out of limits, if we are reduce increments
-        ix_scaled = ix * scale_v
-        iy_scaled = iy * scale_v
-        iz_scaled = iz * scale_v
-        while p[i][0]+ix_scaled >= robot_threshold or p[i][1]+iy_scaled >= robot_threshold or p[i][2]+iz_scaled>= robot_threshold:
-            ix_scaled=int(ix/2)
-            iy_scaled=int(iy/2)
-            iz_scaled=int(iz/2)
-        if random.random()<0.8: # Optimal velocity with some noise
-            v.append([np.random.normal(ix_scaled,abs(ix_scaled*0.2)),
-                      np.random.normal(iy_scaled,abs(iy_scaled*0.2)),
-                      np.random.normal(iz_scaled,abs(iz_scaled*0.2))]) # Tangent velocity
-        else: #Random velocity value
+        while abs(p[i][0] + ix) >= robot_threshold or abs(p[i][1] + iy) >= robot_threshold or abs(p[i][2] + iz) >= robot_threshold:
+            ix = int(ix / 2)
+            iy = int(iy / 2)
+            iz = int(iz / 2)
+        ix_vel_scaled = ix * scale_v
+        iy_vel_scaled = iy * scale_v
+        iz_vel_scaled = iz * scale_v
+        if random.random() < 0.8:  # Optimal velocity with some noise
+            v.append([np.random.normal(ix_vel_scaled, abs(ix_vel_scaled * 0.2)),
+                      np.random.normal(iy_vel_scaled, abs(iy_vel_scaled * 0.2)),
+                      np.random.normal(iz_vel_scaled, abs(iz_vel_scaled * 0.2))])  # Tangent velocity
+        else:  # Random velocity value
             v.append([random.randrange(-vel_threshold, vel_threshold, 1),
                       random.randrange(-vel_threshold, vel_threshold, 1),
                       random.randrange(-vel_threshold, vel_threshold, 1)])
-        p.append([p[i][0]+ix,p[i][1]+iy,p[i][2]+iz])
-        it = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) + it # Total displacement
+        p.append([p[i][0] + ix, p[i][1] + iy, p[i][2] + iz])
+        it = np.linalg.norm(np.asarray(p[i]) - np.asarray(p[i + 1])) + it  # Total displacement
 
-    v.append([np.random.normal(ix_scaled/2, abs(ix_scaled * 0.2)),
-              np.random.normal(iy_scaled/2, abs(iy_scaled * 0.2)),
-              np.random.normal(iz_scaled/2, abs(iz_scaled * 0.2))])  # Tangent velocity
+    v.append([np.random.normal(ix_vel_scaled / 2, abs(ix_vel_scaled * 0.2)),
+              np.random.normal(iy_vel_scaled / 2, abs(iy_vel_scaled * 0.2)),
+              np.random.normal(iz_vel_scaled / 2, abs(iz_vel_scaled * 0.2))])  # Tangent velocity
     print("El array de velocidades es:", v)
 
     t_values = []
     total_tpoints = 0
-    for i in range(num_points-2): # Each segment is assigned points as function of the longitude
-        ip = np.linalg.norm(np.asarray(p[i])-np.asarray(p[i+1])) # Segment Longitude
-        num_tpoints = int((ip/it)*50) # Number of points assigned as a function of the longitude
+    for i in range(num_points - 2):  # Each segment is assigned points as function of the longitude
+        ip = np.linalg.norm(np.asarray(p[i]) - np.asarray(p[i + 1]))  # Segment Longitude
+        num_tpoints = int((ip / it) * 50)  # Number of points assigned as a function of the longitude
         total_tpoints += num_tpoints
-        t_values.append(np.linspace(0,1,num_tpoints+1)) # 1 point more to remove the last point (see below)
-        np.delete(t_values[i], -1) # Remove the last point since it will be the first of the next segment
+        t_values.append(np.linspace(0, 1, num_tpoints + 1))  # 1 point more to remove the last point (see below)
+        np.delete(t_values[i], -1)  # Remove the last point since it will be the first of the next segment
 
-    t_values.append(np.linspace(0,1,50-total_tpoints)) # The rest of points are assigned to the last segment
+    t_values.append(np.linspace(0, 1, 50 - total_tpoints))  # The rest of points are assigned to the last segment
 
-    traj_array = generate_hermitian_traj(p,v,t_values, traj_type, input_size, vel_threshold)
+    traj_array = generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_threshold, vel_threshold)
 
     return traj_array

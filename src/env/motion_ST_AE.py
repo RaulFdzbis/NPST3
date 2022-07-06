@@ -120,8 +120,8 @@ class ae_env():
             warped_g = np.append(warped_g, [np.asarray(self.generated_motion)[-1]], axis=0) #Add last point to warping (warp dont do this)
             if (np.shape(warped_g)[0]>50):
                 print("ERROR WARPED TRAJECTORY TOO LONG")
-            print("Trajectory is: ", self.content_motion)
-            print("Trajectory generated warped is: ", warped_g)
+            #print("Trajectory is: ", self.content_motion)
+            #print("Trajectory generated warped is: ", warped_g)
 
             input_generated_motion = input_processing.input_generator(warped_g, self.input_size)  # generated_motion to NN friendly array for input
 
@@ -135,7 +135,7 @@ class ae_env():
 
             # Generated outputs
             input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
-            print("Input generated motion is: ", input_generated_motion)
+            #print("Input generated motion is: ", input_generated_motion)
             generated_outputs = self.ae_outputs([input_generated_motion])
             
 
@@ -183,6 +183,7 @@ class ae_env():
             cl = 0
             sl = 0
             vel_loss = 0
+            warped_g = 0
 
         # Time step
         n_timestep = num_points
@@ -204,19 +205,19 @@ class ae_env():
         # if np.shape(self.generated_motion)[0] == self.input_size:
         #    print("totals losses are: ", self.tcl, self.tsl, self.tpl, self.tvl)
         #    print("WARNING: CONT POSS ALSO ADDED IN THIS VERSION")
-        return comp_reward, self.wc * n_timestep * cl, self.ws * n_timestep * sl, self.wv * n_timestep * vel_loss, n_timestep * self.wpc * pos_loss_cont, self.wp * pos_loss
+        return comp_reward, self.wc * n_timestep * cl, self.ws * n_timestep * sl, self.wv * n_timestep * vel_loss, n_timestep * self.wpc * pos_loss_cont, self.wp * pos_loss, warped_g
 
     def step(self, step_action, content_motion):  # Step outpus a list for generated
         self.content_motion = np.asarray(content_motion)
         self.generated_motion.append(list(
             np.clip(list(map(add, self.generated_motion[-1], step_action)), -300, 300)))  # add next step
 
-        step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss = self.compute_reward()
+        step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, warped_traj = self.compute_reward()
 
         if np.shape(self.generated_motion)[0] == self.input_size:
             self.done = 1
 
-        return self.generated_motion, step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, self.done
+        return self.generated_motion, step_reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, self.done, warped_traj
 
 
 if __name__ == "__main__":
