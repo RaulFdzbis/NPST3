@@ -36,8 +36,8 @@ class ae_env():
         self.done = 0
         self.robot_threshold = robot_threshold
         # Style Transfer and constraints weights
-        self.wc = 20 # Ref tabla loss 2
-        self.ws = 0.2 # Ref tabla loss 0.02
+        self.wc = 200 # Ref tabla loss 2
+        self.ws = 2 # Ref tabla loss 0.02
         self.wp = 10 # End pos Ref tabla loss 100
         self.wv = 1 # Ref tabla loss 0.1
         self.wpc = 0.01*(1e-5) # DTW pos Ref tabla loss 0.1*(1e-5)
@@ -117,6 +117,9 @@ class ae_env():
             pos_loss_cont = alignment.distance
             wq = warp(alignment, index_reference=False) #Find the warped trajectory
             warped_g = np.asarray(self.generated_motion)[wq]
+            warped_g = np.append(warped_g, [np.asarray(self.generated_motion)[-1]], axis=0) #Add last point to warping (warp dont do this)
+            if (np.shape(warped_g)[0]>50):
+                print("ERROR WARPED TRAJECTORY TOO LONG")
             print("Trajectory is: ", self.content_motion)
             print("Trajectory generated is: ", warped_g)
 
@@ -132,6 +135,7 @@ class ae_env():
 
             # Generated outputs
             input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
+            print("Input generated motion is: ", input_generated_motion)
             generated_outputs = self.ae_outputs([input_generated_motion])
             
 
@@ -157,10 +161,10 @@ class ae_env():
             #IPython.embed()
 
             # Velocity
-            gen_velocity = 0;
-            gen_points = 0;
+            gen_velocity = 0
+            gen_points = 0
             for i in range(1, num_points):
-                vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]));
+                vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]))
                 if vel_i != 0:  # If stopped not taken in account to compute avg vel
                     gen_velocity = gen_velocity + vel_i
                     gen_points += 1

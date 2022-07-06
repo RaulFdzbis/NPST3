@@ -13,11 +13,9 @@ from env import motion_ST_AE
 import matplotlib.pyplot as plt
 import os
 import IPython
-import random
 import argparse
-import copy
-import time
 import herm_traj_generator
+from dtw import *
 
 # Arguments
 parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2: Sad, 3: Angry.')
@@ -35,7 +33,7 @@ noise_scale = 25
 upper_bound = 0.1 * robot_threshold
 lower_bound = -0.1 * robot_threshold
 
-total_episodes = 3
+total_episodes = 4
 
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
@@ -44,6 +42,7 @@ actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5") # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/01-07-22/autoencoder.h5"
+ae_path_2 = "./../autoencoders/trained-models/autoencoder.h5"
 
 style_data = []
 file_list = sorted(os.listdir("./styles"))
@@ -87,6 +86,9 @@ def policy(state):
 # env
 content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound) #Actually not used
 env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
+env2 = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path_2)
+
+content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
 
 for ep in range(total_episodes):
     # reward history
@@ -95,12 +97,15 @@ for ep in range(total_episodes):
     vel_hist = []
     poss_hist = []
     end_poss_hist = []
-
-    #while(1):
-    content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound)
+    cl_hist2 = []
+    sl_hist2 = []
+    vel_hist2 = []
+    poss_hist2 = []
+    end_poss_hist2 = []
 
     # Init env and generated_motion
     generated_motion = env.reset(content_motion, style_motion)
+    generated_motion2 = env2.reset(content_motion, style_motion)
     episodic_reward = 0
     
     # Generate Content motion
@@ -139,9 +144,24 @@ for ep in range(total_episodes):
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
         #print(action)
+
+        # Hard coded action
+        if ep == 0:
+            escala = 1
+        elif ep == 1:
+            escala = 3
+        elif ep == 2:
+            escala = 5
+        elif ep == 3:
+            alignment = dtw(content_motion, style_motion, keep_internals=True)
+            wq = warp(alignment, index_reference=False)  # Find the warped trajectory
+            warped_g = np.asarray(content_motion)[wq]
+            g_x = [i[0] for i in warped_g]
+            g_y = [i[1] for i in warped_g]
+            g_z = [i[2] for i in warped_g]
         
         # Hard coded action
-        escala = generated_scale
+        ##escala = generated_scale
         if step*escala<INPUT_SIZE:
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])+noise[(step-1)*escala][2]] #XYZ noise
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # X noise
@@ -155,15 +175,13 @@ for ep in range(total_episodes):
         	#action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
         	#action = [-x for x in action] #Negate action
         else:
-        	action = [0,0,0]
+            action = [0,0,0]
         	
         
         # Receive state and reward from environment.
         generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)
-        #print(cl, sl, vel_loss, pos_loss_cont, pos_loss)
-        #print("Generated motion", generated_motion[step-1])
-        #print("Content motion", content_motion[step-1])
-        #print("Style motion", style_motion[step-1])
+        generated_motion2, reward2, cl2, sl2, vel_loss2, pos_loss_cont2, pos_loss2, done2 = env2.step(action, content_motion)
+
         
 
         cl_hist.append(cl)
@@ -171,6 +189,12 @@ for ep in range(total_episodes):
         vel_hist.append(vel_loss)
         poss_hist.append(pos_loss_cont)
         end_poss_hist.append(pos_loss)
+
+        cl_hist2.append(cl2)
+        sl_hist2.append(sl2)
+        vel_hist2.append(vel_loss2)
+        poss_hist2.append(pos_loss_cont2)
+        end_poss_hist2.append(pos_loss2)
 
         # Step outpus a list for generated
         step += 1
@@ -189,6 +213,12 @@ for ep in range(total_episodes):
     print("The Vel loss is:", "{:,}".format(np.sum(vel_hist)))
     print("The Poss loss is:", "{:,}".format(np.sum(poss_hist)))
     print("The EndPoss loss is:", "{:,}".format(np.sum(end_poss_hist)))
+
+    print("The CL2 loss is:", "{:,}".format(np.sum(cl_hist2)))
+    print("The SL2 loss is:", "{:,}".format(np.sum(sl_hist2)))
+    print("The Vel2 loss is:", "{:,}".format(np.sum(vel_hist2)))
+    print("The Poss2 loss is:", "{:,}".format(np.sum(poss_hist2)))
+    print("The EndPoss2 loss is:", "{:,}".format(np.sum(end_poss_hist2)))
     
     content_motion_array = np.asarray(content_motion)
     generated_motion_array = np.asarray(generated_motion)
@@ -203,6 +233,14 @@ for ep in range(total_episodes):
     plt.plot(np.linspace(1, 49, num=49), end_poss_hist, label="end_poss_loss")
     plt.plot(np.linspace(1, 49, num=49), vel_hist, label="vel_loss")
     plt.legend(loc="upper left")
+
+    plt.figure()
+    plt.plot(np.linspace(1, 49, num=49), cl_hist2, label="content_loss_2")
+    plt.plot(np.linspace(1, 49, num=49), sl_hist2, label="style_loss_2")
+    plt.plot(np.linspace(1, 49, num=49), poss_hist2, label="poss_loss_2")
+    plt.plot(np.linspace(1, 49, num=49), end_poss_hist2, label="end_poss_loss_2")
+    plt.plot(np.linspace(1, 49, num=49), vel_hist2, label="vel_loss_2")
+    plt.legend(loc="upper left")
     #plt.ylim(0, 0.2)
 
     # Generated trajectory
@@ -212,8 +250,11 @@ for ep in range(total_episodes):
     #ax.set_yticklabels([])
     #ax.set_xticklabels([])
     #ax.set_zticklabels([])
+    ax.axes.set_xlim3d(left=-robot_threshold, right=robot_threshold)
+    ax.axes.set_ylim3d(bottom=-robot_threshold, top=robot_threshold)
+    ax.axes.set_zlim3d(bottom=-robot_threshold, top=robot_threshold)
     #Velocity scaled to a maximum of 0.8m/s
-    for i in range(1,INPUT_SIZE):
+    for i in range(0,INPUT_SIZE-1):
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1])*255/80)), linewidth=2)
             #print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
             ##print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
