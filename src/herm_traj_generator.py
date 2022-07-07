@@ -218,7 +218,7 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
     v.append([np.random.normal(ix_vel_scaled / 2, abs(ix_vel_scaled * 0.2)),
               np.random.normal(iy_vel_scaled / 2, abs(iy_vel_scaled * 0.2)),
               np.random.normal(iz_vel_scaled / 2, abs(iz_vel_scaled * 0.2))])  # Tangent velocity
-    print("El array de velocidades es:", v)
+    #print("El array de velocidades es:", v)
 
     t_values = []
     total_tpoints = 0
