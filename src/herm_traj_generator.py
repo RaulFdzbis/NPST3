@@ -81,24 +81,40 @@ def generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_thresho
     else:
         for i in range(1, input_size):
             if (i * escala) < (input_size - 1):
-                ix = traj[i * escala][0] - traj_escaled[i-1][0] # Increment = next traj point - current traj_escaled point
-                iy = traj[i * escala][1] - traj_escaled[i-1][1]
-                iz = traj[i * escala][2] - traj_escaled[i-1][2]
+                curve_ix = traj[i * escala][0] - traj_escaled[i-1][0] # Increment = next traj point - current traj_escaled point
+                curve_iy = traj[i * escala][1] - traj_escaled[i-1][1]
+                curve_iz = traj[i * escala][2] - traj_escaled[i-1][2]
                 if nervous == 1:
                     nerv_noise_value = nerv_noise(nerv_generator_scale)
-                    ix += nerv_noise_value[0] #Add noise to increments
-                    iy += nerv_noise_value[1]
-                    iz += nerv_noise_value[2]
-                while (abs(ix) > vel_threshold or abs(iy) > vel_threshold or abs(
-                        iz) > vel_threshold):  # Make sure not outside the max vel
-                    ix -= np.sign(ix)  # Reduce abs value of ix by 1
-                    iy -= np.sign(iy)
-                    iz -= np.sign(iz)
+                    curve_ix += nerv_noise_value[0] #Add noise to increments
+                    curve_iy += nerv_noise_value[1]
+                    curve_iz += nerv_noise_value[2]
+                while (abs(curve_ix) > vel_threshold or abs(curve_iy) > vel_threshold or abs(
+                        curve_iz) > vel_threshold):  # Make sure not outside the max vel
+                    curve_ix -= np.sign(curve_ix)  # Reduce abs value of ix by 1
+                    curve_iy -= np.sign(curve_iy)
+                    curve_iz -= np.sign(curve_iz)
                 # print(ix,iy,iz)
-                tmp_point = [x + y for x, y in zip(traj_escaled[-1], [ix, iy, iz])] # Add noise
+                tmp_point = [x + y for x, y in zip(traj_escaled[-1], [curve_ix, curve_iy, curve_iz])] # Add scaled increment
                 traj_escaled.append(np.clip(tmp_point, -robot_threshold, robot_threshold))
             else:
-                traj_escaled.append(traj[-1])
+                curve_ix = traj[-1][0] - traj_escaled[i-1][0] # Increment = next traj point - current traj_escaled point
+                curve_iy = traj[-1][1] - traj_escaled[i-1][1]
+                curve_iz = traj[-1][2] - traj_escaled[i-1][2]
+                if nervous == 1:
+                    nerv_noise_value = nerv_noise(nerv_generator_scale)
+                    curve_ix += nerv_noise_value[0] #Add noise to increments
+                    curve_iy += nerv_noise_value[1]
+                    curve_iz += nerv_noise_value[2]
+                while (abs(curve_ix) > vel_threshold or abs(curve_iy) > vel_threshold or abs(
+                        curve_iz) > vel_threshold):  # Make sure not outside the max vel
+                    curve_ix -= np.sign(curve_ix)  # Reduce abs value of ix by 1
+                    curve_iy -= np.sign(curve_iy)
+                    curve_iz -= np.sign(curve_iz)
+                # print(ix,iy,iz)
+                tmp_point = [x + y for x, y in zip(traj_escaled[-1], [curve_ix, curve_iy, curve_iz])] # Add scaled increment
+                traj_escaled.append(np.clip(tmp_point, -robot_threshold, robot_threshold))
+                #traj_escaled.append(traj[-1])
 
     traj_array = np.asarray(traj_escaled)
     # traj_array2 = np.asarray(traj)
@@ -148,23 +164,23 @@ def generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_thresho
 def generate_base_traj(input_size, robot_threshold, vel_threshold):
     # Scale hermitian velocity >1 angry. 1 means a smooth trajectory.
     v_p = random.random()
-
+    print("RANDOM IS: ", v_p)
     if v_p < 0.2:  # 20% of times we have a slow velocity scale
         scale_v = 0.5
         traj_type = "slow"
-        # print("Trayectoria Lenta")
+        print("Trayectoria Lenta")
     elif v_p < 0.60:  # 40% of times we have a normal velocity scale
         scale_v = 1
         traj_type = "normal"
-        # print("Trayectoria Normal")
+        print("Trayectoria Normal")
     elif v_p < 0.85:  # 25% of times we have a fast velocity scale
         scale_v = 2
         traj_type = "fast"  # 15% of times we have a fast velocity scale
-        # print("Trayectoria Rapida")
+        print("Trayectoria Rapida")
     else:  # 5% of times we have a very fast velocity scale
         scale_v = 3
         traj_type = "veryfast"
-        # print("Trayectoria Muy Rapida")
+        print("Trayectoria Muy Rapida")
 
     ## Generate points
 
@@ -175,9 +191,9 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
     v = []
     it = 0
     for i in range(num_points - 1):  # Length
-        ix = random.randrange(0, int(robot_threshold*1.5 / (num_points - 1)), 1)
-        iy = random.randrange(0, int(robot_threshold*1.5 / (num_points - 1)), 1)
-        iz = random.randrange(0, int(robot_threshold*1.5 / (num_points - 1)), 1)
+        ix = random.randrange(0, int(robot_threshold / (num_points - 1)), 1)
+        iy = random.randrange(0, int(robot_threshold / (num_points - 1)), 1)
+        iz = random.randrange(0, int(robot_threshold / (num_points - 1)), 1)
         if random.random() < 0.5:  # We make negative moves with a 50% probability
             ix = -ix
         if random.random() < 0.5:
@@ -187,9 +203,9 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
 
         # Make sure we are not out of limits, if we are reduce increments
         while abs(p[i][0] + ix) >= robot_threshold or abs(p[i][1] + iy) >= robot_threshold or abs(p[i][2] + iz) >= robot_threshold:
-            ix = int(ix / 2)
-            iy = int(iy / 2)
-            iz = int(iz / 2)
+            ix -= np.sign(ix)
+            iy -= np.sign(iy)
+            iz -= np.sign(iz)
         ix_vel_scaled = ix * scale_v
         iy_vel_scaled = iy * scale_v
         iz_vel_scaled = iz * scale_v
@@ -197,7 +213,7 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
             v.append([np.random.normal(ix_vel_scaled, abs(ix_vel_scaled * 0.2)),
                       np.random.normal(iy_vel_scaled, abs(iy_vel_scaled * 0.2)),
                       np.random.normal(iz_vel_scaled, abs(iz_vel_scaled * 0.2))])  # Tangent velocity
-        else:  # Random velocity value
+        else:  # Random velocity value within vel threshold
             v.append([random.randrange(-vel_threshold, vel_threshold, 1),
                       random.randrange(-vel_threshold, vel_threshold, 1),
                       random.randrange(-vel_threshold, vel_threshold, 1)])
