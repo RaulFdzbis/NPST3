@@ -101,11 +101,6 @@ def generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_thresho
                 curve_ix = traj[-1][0] - traj_escaled[i-1][0] # Increment = next traj point - current traj_escaled point
                 curve_iy = traj[-1][1] - traj_escaled[i-1][1]
                 curve_iz = traj[-1][2] - traj_escaled[i-1][2]
-                if nervous == 1:
-                    nerv_noise_value = nerv_noise(nerv_generator_scale)
-                    curve_ix += nerv_noise_value[0] #Add noise to increments
-                    curve_iy += nerv_noise_value[1]
-                    curve_iz += nerv_noise_value[2]
                 while (abs(curve_ix) > vel_threshold or abs(curve_iy) > vel_threshold or abs(
                         curve_iz) > vel_threshold):  # Make sure not outside the max vel
                     curve_ix -= np.sign(curve_ix)  # Reduce abs value of ix by 1
@@ -164,23 +159,23 @@ def generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_thresho
 def generate_base_traj(input_size, robot_threshold, vel_threshold):
     # Scale hermitian velocity >1 angry. 1 means a smooth trajectory.
     v_p = random.random()
-    print("RANDOM IS: ", v_p)
+    #print("RANDOM IS: ", v_p)
     if v_p < 0.2:  # 20% of times we have a slow velocity scale
         scale_v = 0.5
         traj_type = "slow"
-        print("Trayectoria Lenta")
+        #print("Trayectoria Lenta")
     elif v_p < 0.60:  # 40% of times we have a normal velocity scale
         scale_v = 1
         traj_type = "normal"
-        print("Trayectoria Normal")
+        #print("Trayectoria Normal")
     elif v_p < 0.85:  # 25% of times we have a fast velocity scale
         scale_v = 2
         traj_type = "fast"  # 15% of times we have a fast velocity scale
-        print("Trayectoria Rapida")
+        #print("Trayectoria Rapida")
     else:  # 5% of times we have a very fast velocity scale
         scale_v = 3
         traj_type = "veryfast"
-        print("Trayectoria Muy Rapida")
+        #print("Trayectoria Muy Rapida")
 
     ## Generate points
 
