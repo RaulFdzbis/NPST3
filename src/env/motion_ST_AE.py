@@ -35,6 +35,7 @@ class ae_env():
         self.generated_motion.append(list(content_motion[0]))  # Init position
         self.done = 0
         self.robot_threshold = robot_threshold
+        self.vel_threshold = robot_threshold*0.1
         # Style Transfer and constraints weights
         self.wc = 200 # Ref tabla loss 2
         self.ws = 2 # Ref tabla loss 0.02
@@ -120,10 +121,26 @@ class ae_env():
             warped_g = np.append(warped_g, [np.asarray(self.generated_motion)[-1]], axis=0) #Add last point to warping (warp dont do this)
             if (np.shape(warped_g)[0]>50):
                 print("ERROR WARPED TRAJECTORY TOO LONG")
+            warped_traj = [[0,0,0]]
+            for index in range(np.shape(warped_g)[0]-1):
+                warped_ix = warped_g[index+1][0] - warped_traj[index][0]
+                warped_iy = warped_g[index+1][1] - warped_traj[index][1]
+                warped_iz = warped_g[index+1][2] - warped_traj[index][2]
+                #print("Incrementos: ", warped_ix, warped_iy, warped_iz)
+                while (abs(warped_ix) > self.vel_threshold or
+                       abs(warped_iy) > self.vel_threshold or
+                       abs(warped_iz) > self.vel_threshold):  # Make sure not outside the max vel
+                    warped_ix -= np.sign(warped_ix)  # Reduce abs value of ix by 1
+                    warped_iy -= np.sign(warped_iy)
+                    warped_iz -= np.sign(warped_iz)
+                warped_traj.append([x + y for x, y in zip(warped_traj[index], [warped_ix, warped_iy, warped_iz])])
+                #print(traj[index])
+
+
             #print("Trajectory is: ", self.content_motion)
             #print("Trajectory generated warped is: ", warped_g)
 
-            input_generated_motion = input_processing.input_generator(warped_g, self.input_size)  # generated_motion to NN friendly array for input
+            input_generated_motion = input_processing.input_generator(warped_traj, self.input_size)  # generated_motion to NN friendly array for input
 
             #Plot for debug purposes
             # fig = plt.figure()
@@ -183,7 +200,7 @@ class ae_env():
             cl = 0
             sl = 0
             vel_loss = 0
-            warped_g = 0
+            warped_traj = 0
 
         # Time step
         n_timestep = num_points
@@ -205,7 +222,7 @@ class ae_env():
         # if np.shape(self.generated_motion)[0] == self.input_size:
         #    print("totals losses are: ", self.tcl, self.tsl, self.tpl, self.tvl)
         #    print("WARNING: CONT POSS ALSO ADDED IN THIS VERSION")
-        return comp_reward, self.wc * n_timestep * cl, self.ws * n_timestep * sl, self.wv * n_timestep * vel_loss, n_timestep * self.wpc * pos_loss_cont, self.wp * pos_loss, warped_g
+        return comp_reward, self.wc * n_timestep * cl, self.ws * n_timestep * sl, self.wv * n_timestep * vel_loss, n_timestep * self.wpc * pos_loss_cont, self.wp * pos_loss, warped_traj
 
     def step(self, step_action, content_motion):  # Step outpus a list for generated
         self.content_motion = np.asarray(content_motion)
