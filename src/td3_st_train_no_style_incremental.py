@@ -399,12 +399,12 @@ total_it = 0
 # Start the training
 for ep in range(total_episodes):
     # Select random seed for the generation of the content
-    content_motion_input = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
+    content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
 
     # Generate env
     generated_motion = env.reset(content_motion, style_motion)
     generated_motion_input = input_processing.input_generator(generated_motion, INPUT_SIZE)
-    start_state = [content_motion_input, generated_motion_input]
+    start_state = [content_motion, generated_motion_input]
     prev_state = start_state
 
     step = 1
@@ -427,7 +427,7 @@ for ep in range(total_episodes):
     while True:
         # Get action from critic
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
-        tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion_input), 0)
+        tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
         tf_prev_state = [tf_content_motion, tf_generated_motion]
 
         # Exploration
@@ -442,8 +442,7 @@ for ep in range(total_episodes):
 
         # Generate state
         generated_motion_input = input_processing.input_generator(generated_motion, INPUT_SIZE)
-        content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
-        state = [content_motion_input, generated_motion_input]
+        state = [content_motion, generated_motion_input]
         buffer.record((prev_state, action, reward, state, done))
         episodic_reward += reward
         episodic_cl += cl
