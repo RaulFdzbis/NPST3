@@ -140,8 +140,8 @@ class ae_env():
             #print("Trajectory is: ", self.content_motion)
             #print("Trajectory generated warped is: ", warped_g)
 
-            input_generated_motion = input_processing.input_generator(warped_traj, self.input_size)  # generated_motion to NN friendly array for input
-
+            input_generated_motion_content = input_processing.input_generator(warped_traj, self.input_size)  # generated_motion to NN friendly array for input
+            input_generated_motion_style = input_processing.input_generator(self.generated_motion, self.input_size)
             #Plot for debug purposes
             # fig = plt.figure()
             # ax = fig.add_subplot(1, 3, 1, projection='3d')
@@ -151,9 +151,12 @@ class ae_env():
             # plt.show()
 
             # Generated outputs
-            input_generated_motion = np.expand_dims(input_generated_motion, axis=0)
+            input_generated_motion_content = np.expand_dims(input_generated_motion_content, axis=0)
+            input_generated_motion_style = np.expand_dims(input_generated_motion_style, axis=0)
+
             #print("Input generated motion is: ", input_generated_motion)
-            generated_outputs = self.ae_outputs([input_generated_motion])
+            generated_outputs_content = self.ae_outputs([input_generated_motion_content])
+            generated_outputs_style = self.ae_outputs([input_generated_motion_style])
             
 
             # Generated raw outputs (No warp)
@@ -162,8 +165,8 @@ class ae_env():
             #generated_outputs_2 = self.ae_outputs([input_generated_motion_2])
 
             # cl and sl
-            cl = self.content_loss(generated_outputs)
-            sl = self.style_loss(generated_outputs)
+            cl = self.content_loss(generated_outputs_content)
+            sl = self.style_loss(generated_outputs_style)
             #print("\nContent loss DTW:", self.wc * num_points * cl)
             #print("Style loss DTW:", self.ws * num_points * sl)
 
