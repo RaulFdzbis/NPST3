@@ -21,9 +21,8 @@ import seaborn as sns
 #import pickle
 import IPython
 import random
-from operator import add
 import argparse
-import copy
+import herm_traj_generator
 
 # Arguments
 parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2: Sad, 3: Angry.')
@@ -356,7 +355,7 @@ hist_grad_actor = []
 hist_value_error = []
 
 # Select AE
-ae_path = "./../autoencoders/trained-models/autoencoder.h5"
+ae_path = "./../autoencoders/trained-models/08-07-22/autoencoder.h5"
 
 ## Extract VICON data
 style_data = []
@@ -400,50 +399,7 @@ total_it = 0
 # Start the training
 for ep in range(total_episodes):
     # Select random seed for the generation of the content
-    content_motion = []
-    content_motion.append([0, 0, 0])
-
-    #First section "pick"
-    pick_z_vel = 10; num_pick_points = 9
-    current_point = copy.deepcopy(content_motion[0])
-    # IPython.embed()
-    for i in range(num_pick_points):
-        current_point[2] = current_point[2]+pick_z_vel
-        content_motion.append(copy.deepcopy(current_point))
-
-    #Second section "move"
-    num_move_points = 30;
-
-    # Compute distances for x,y,z
-    var=100
-    dx=np.clip(np.random.normal(150,var),0,robot_threshold)
-    y_max=np.sqrt(max(0,robot_threshold**2-dx**2))
-    dy=np.clip(np.random.normal(y_max,var),0,y_max)
-    z_max=np.sqrt(max(0,robot_threshold**2-dx**2-dy**2))
-    dz = np.clip(np.random.normal(0, var), 0, z_max)
-
-
-    # Compute x,y,z
-    x = dx if random.random() < 0.5 else -dx
-    y = dy if random.random() < 0.5 else -dy
-    z = dz #No negative z
-
-    # Generate move section
-    for i in range(num_move_points):
-        current_point[0] = current_point[0] + x / num_move_points
-        current_point[1] = current_point[1] + y / num_move_points
-        current_point[2] = current_point[2] + z / num_move_points
-        content_motion.append(copy.deepcopy(current_point))
-
-    # Third section "place"
-    place_z_vel = 10; num_place_points = 10
-
-    for i in range(num_place_points):
-        current_point[2] = current_point[2] - place_z_vel
-        content_motion.append(copy.deepcopy(current_point))
-
-    # Generate Content motion
-    content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
+    content_motion_input = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
 
     # Generate env
     generated_motion = env.reset(content_motion, style_motion)
