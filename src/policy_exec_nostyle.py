@@ -22,7 +22,6 @@ parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2
 parser.add_argument('--style', type=int, default=0)
 args = parser.parse_args()
 
-
 # Parameters
 INPUT_SIZE = 50
 robot_threshold = 300  # Absolute max range of robot movements in mm
@@ -33,15 +32,15 @@ noise_scale = 25
 upper_bound = 0.1 * robot_threshold
 lower_bound = -0.1 * robot_threshold
 
-total_episodes = 1000
+total_episodes = 10
 
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
-#actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5") # Actor
+# actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
+actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5")  # Actor
 
 # Path to AE
-ae_path = "./../autoencoders/trained-models/01-07-22/autoencoder.h5"
+ae_path = "./../autoencoders/trained-models/08-07-22/autoencoder.h5"
 ae_path_2 = "./../autoencoders/trained-models/autoencoder.h5"
 
 style_data = []
@@ -72,6 +71,7 @@ style_motion = selected_styles[args.style]
 style_motion = style_motion - style_motion[0]
 tf_style_motion = tf.expand_dims(tf.convert_to_tensor(style_motion), 0)
 
+
 def policy(state):
     sampled_actions = tf.squeeze(actor_model(state))
     sampled_actions = sampled_actions.numpy()
@@ -82,13 +82,12 @@ def policy(state):
     return list(np.squeeze(legal_action))
 
 
-
 # env
-content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE,robot_threshold,upper_bound) #Actually not used
+content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)  # Actually not used
 env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
 env2 = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path_2)
 
-#content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
+# content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
 
 for ep in range(total_episodes):
     # reward history
@@ -109,7 +108,7 @@ for ep in range(total_episodes):
     generated_motion = env.reset(content_motion, style_motion)
     generated_motion2 = env2.reset(content_motion, style_motion)
     episodic_reward = 0
-    
+
     # Generate Content motion
     tf_content_motion = tf.expand_dims(tf.convert_to_tensor(content_motion), 0)
     # content_motion_input = input_processing.input_generator(content_motion, INPUT_SIZE)
@@ -127,12 +126,12 @@ for ep in range(total_episodes):
     #    noise.append([x - y for (x, y) in zip(style_motion[i + 1], style_motion[i])])
 
     # Add sine noise
-    #sin_range = np.arange(0, 200, 4)
-    #noise = np.sin(sin_range)
-    #noise = noise_scale * np.asarray(noise)
-    
+    # sin_range = np.arange(0, 200, 4)
+    # noise = np.sin(sin_range)
+    # noise = noise_scale * np.asarray(noise)
+
     # For Style Motion
-    #generated_motion[0]=style_motion[0]
+    # generated_motion[0]=style_motion[0]
 
     step = 1
     done = 0
@@ -145,9 +144,9 @@ for ep in range(total_episodes):
         tf_generated_motion = tf.expand_dims(tf.convert_to_tensor(generated_motion_input), 0)
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
-        #print(action)
+        # print(action)
 
-
+        '''
         # Hard coded action
         if ep == 0:
             escala = 1
@@ -159,35 +158,37 @@ for ep in range(total_episodes):
             alignment = dtw(content_motion, style_motion, keep_internals=True)
             wq = warp(alignment, index_reference=False)  # Find the warped trajectory
             warped_g = np.asarray(content_motion)[wq]
-            warped_g = np.append(warped_g, [np.asarray(content_motion)[-1]], axis=0) #Add last point to warping (warp dont do this)
+            warped_g = np.append(warped_g, [np.asarray(content_motion)[-1]],
+                                 axis=0)  # Add last point to warping (warp dont do this)
             g_x = [i[0] for i in warped_g]
             g_y = [i[1] for i in warped_g]
             g_z = [i[2] for i in warped_g]
-        
+
         # Hard coded action
         ##escala = generated_scale
-        if step*escala<INPUT_SIZE:
+        if step * escala < INPUT_SIZE:
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala][0],-(g_y[(step-1)*escala]-g_y[(step)*escala])+noise[(step-1)*escala][1],-(g_z[(step-1)*escala]-g_z[(step)*escala])+noise[(step-1)*escala][2]] #XYZ noise
             # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)*escala],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # X noise
-            #action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
-            action = [-(g_x[(step-1)*escala]-g_x[(step)*escala]),-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] # No noise
-            #print(action)
-            #action = style_motion[step*escala]-style_motion[(step-1)*escala] # Style
-            action = np.clip(action,-upper_bound, upper_bound)
-        	#print(noise[step-1][0])
+            # action = [-(g_x[(step-1)*escala]-g_x[(step)*escala])+noise[(step-1)],-(g_y[(step-1)*escala]-g_y[(step)*escala]),-(g_z[(step-1)*escala]-g_z[(step)*escala])] #Sine noise
+            action = [-(g_x[(step - 1) * escala] - g_x[(step) * escala]),
+                      -(g_y[(step - 1) * escala] - g_y[(step) * escala]),
+                      -(g_z[(step - 1) * escala] - g_z[(step) * escala])]  # No noise
+            # print(action)
+            # action = style_motion[step*escala]-style_motion[(step-1)*escala] # Style
+            action = np.clip(action, -upper_bound, upper_bound)
+        # print(noise[step-1][0])
 
-        	#action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
-        	#action = [-x for x in action] #Negate action
+        # action = [random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound), random.uniform(lower_bound, upper_bound)]
+        # action = [-x for x in action] #Negate action
         else:
-            action = [0,0,0]
+            action = [0, 0, 0]
+        '''
 
-        	
-        
         # Receive state and reward from environment.
-        generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done, warped_traj = env.step(action, content_motion)
-        generated_motion2, reward2, cl2, sl2, vel_loss2, pos_loss_cont2, pos_loss2, done2, warped_traj = env2.step(action, content_motion)
-
-        
+        generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done, warped_traj = env.step(action,
+                                                                                                          content_motion)
+        generated_motion2, reward2, cl2, sl2, vel_loss2, pos_loss_cont2, pos_loss2, done2, warped_traj = env2.step(
+            action, content_motion)
 
         cl_hist.append(cl)
         sl_hist.append(sl)
@@ -252,33 +253,49 @@ for ep in range(total_episodes):
     plt.plot(np.linspace(1, 49, num=49), end_poss_hist2, label="end_poss_loss_2")
     plt.plot(np.linspace(1, 49, num=49), vel_hist2, label="vel_loss_2")
     plt.legend(loc="upper left")
-    #plt.ylim(0, 0.2)
+    # plt.ylim(0, 0.2)
 
     # Generated trajectory
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     # To remove labels from axis
-    #ax.set_yticklabels([])
-    #ax.set_xticklabels([])
-    #ax.set_zticklabels([])
+    # ax.set_yticklabels([])
+    # ax.set_xticklabels([])
+    # ax.set_zticklabels([])
     ax.axes.set_xlim3d(left=-robot_threshold, right=robot_threshold)
     ax.axes.set_ylim3d(bottom=-robot_threshold, top=robot_threshold)
     ax.axes.set_zlim3d(bottom=-robot_threshold, top=robot_threshold)
-    #Velocity scaled to a maximum of 0.8m/s
+    # Velocity scaled to a maximum of 0.8m/s
 
-    for i in range(0,INPUT_SIZE-1):
-        #if (np.linalg.norm(generated_motion_array[i]-generated_motion_array[i+1]) != 0):
-        #    ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(generated_motion_array[i]-generated_motion_array[i+1])*255/50)), linewidth=2)
-            #print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
-            #print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
-            #print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
-            #print("Velocity loss: ", vel_hist[i-1])
+    for i in range(0, INPUT_SIZE - 1):
+        '''
+        if np.linalg.norm(generated_motion_array[i] - generated_motion_array[i + 1]) != 0:
+            ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2],
+                    generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(
+                    int(np.linalg.norm(generated_motion_array[i] - generated_motion_array[i + 1]) * 255 / 50)),
+                    linewidth=2)
+            # print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
+            # print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
+            # print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
+            # print("Velocity loss: ", vel_hist[i-1])
+        '''
 
-        #if (np.linalg.norm(content_motion_array[i]-content_motion_array[i+1]) != 0):
-        #    ax.plot(warped_traj_array[:, 0][i:i + 2], warped_traj_array[:, 1][i:i + 2], warped_traj_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(warped_traj_array[i]-warped_traj_array[i+1])*255/50)), linewidth=6)
+        if np.linalg.norm(content_motion_array[i] - content_motion_array[i + 1]) != 0:
+            ax.plot(warped_traj_array[:, 0][i:i + 2], warped_traj_array[:, 1][i:i + 2],
+                    warped_traj_array[:, 2][i:i + 2],
+                    c=plt.cm.jet(int(np.linalg.norm(warped_traj_array[i] - warped_traj_array[i + 1]) * 255 / 50)),
+                    linewidth=6)
 
-
-        if (np.linalg.norm(content_motion_array[i]-content_motion_array[i+1]) != 0):
-            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i]-content_motion_array[i+1])*255/50)), linewidth=2)
-            #ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2], style_motion_array[:, 2][i:i + 2], c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i]-style_motion_array[i-1])*255/80)), linewidth=2)
+        if (np.linalg.norm(content_motion_array[i] - content_motion_array[i + 1]) != 0):
+            ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2],
+                    content_motion_array[:, 2][i:i + 2],
+                    c=plt.cm.jet(int(np.linalg.norm(content_motion_array[i] - content_motion_array[i + 1]) * 255 / 50)),
+                    linewidth=2)
+        '''
+        if (np.linalg.norm(style_motion_array[i] - style_motion_array[i + 1]) != 0):
+            ax.plot(style_motion_array[:, 0][i:i + 2], style_motion_array[:, 1][i:i + 2],
+                    style_motion_array[:, 2][i:i + 2],
+                    c=plt.cm.jet(int(np.linalg.norm(style_motion_array[i] - style_motion_array[i + 1]) * 255 / 50)),
+                    linewidth=2)
+        '''
     plt.show()

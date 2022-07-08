@@ -19,7 +19,7 @@ robot_threshold = 300
 upper_bound = robot_threshold * 0.1
 
 # Load the Autoencoder
-autoencoder = load_model("./trained-models/01-07-22/autoencoder.h5")
+autoencoder = load_model("./trained-models/08-07-22/autoencoder.h5")
 #autoencoder = load_model("./trained-models/autoencoder.h5")
 
 # Uncomment for using the dataset
@@ -61,9 +61,6 @@ input_motion = np.clip(input_motion, -robot_threshold, robot_threshold)
 decoded_motion = autoencoder.predict(input_motion)
 
 #IPython.embed()
-
-
-
 
 # Inplut plot
 fig = plt.figure()
