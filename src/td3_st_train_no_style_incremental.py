@@ -438,7 +438,7 @@ for ep in range(total_episodes):
                       random.uniform(lower_bound, upper_bound)]
 
         # Recieve state and reward from environment.
-        generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done = env.step(action, content_motion)  # Step outputs a list for generated
+        generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done, warped_traj = env.step(action, content_motion)  # Step outputs a list for generated
 
         # Generate state
         generated_motion_input = input_processing.input_generator(generated_motion, INPUT_SIZE)
