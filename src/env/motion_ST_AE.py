@@ -39,9 +39,9 @@ class ae_env():
         # Style Transfer and constraints weights
         self.wc = 200 # Ref tabla loss 2
         self.ws = 2 # Ref tabla loss 0.02
-        self.wp = 10 # End pos Ref tabla loss 100
-        self.wv = 1 # Ref tabla loss 0.1
-        self.wpc = 0.01*(1e-5) # DTW pos Ref tabla loss 0.1*(1e-5)
+        self.wp = 500 # End pos Ref tabla loss 100
+        self.wv = 0.5 # Ref tabla loss 0.1
+        self.wpc = 0.05*(1e-5) # DTW pos Ref tabla loss 0.1*(1e-5)
 
         # Debug
         self.tcl = 0
