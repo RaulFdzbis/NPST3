@@ -305,8 +305,8 @@ target_actor.set_weights(actor_model.get_weights())
 target_critic.set_weights(critic_model.get_weights())
 
 # Learning rate for critic and actor models
-critic_lr = 0.00001
-actor_lr = 0.000001
+critic_lr = 0.000005
+actor_lr = 0.0000005
 
 # Optimizer for models
 critic_optimizer = tf.keras.optimizers.Adam(critic_lr)
