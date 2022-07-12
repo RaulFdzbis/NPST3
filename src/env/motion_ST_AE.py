@@ -37,10 +37,10 @@ class ae_env():
         self.robot_threshold = robot_threshold
         self.vel_threshold = robot_threshold*0.1
         # Style Transfer and constraints weights
-        self.wc = 200 # Ref tabla loss 2
-        self.ws = 2 # Ref tabla loss 0.02
-        self.wp = 500 # End pos Ref tabla loss 100
-        self.wv = 0.5 # Ref tabla loss 0.1
+        self.wc = 20 # Ref tabla loss 2
+        self.ws = 0.2 # Ref tabla loss 0.02
+        self.wp = 50 # End pos Ref tabla loss 100
+        self.wv = 0.05 # Ref tabla loss 0.1
         self.wpc = 0.05*(1e-5) # DTW pos Ref tabla loss 0.1*(1e-5)
 
         # Debug
@@ -106,7 +106,28 @@ class ae_env():
 
 
         # IPython.embed()
-        # Compute losses only if trajectory finished
+        # Compute DTW loss
+        alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True)
+        pos_loss_cont = alignment.distance
+
+        #Compute vel loss
+        gen_velocity = 0
+        gen_points = 0
+        for i in range(1, num_points):
+            vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]))
+            if vel_i != 0:  # If stopped not taken in account to compute avg vel
+                gen_velocity = gen_velocity + vel_i
+                gen_points += 1
+
+        if gen_points != 0:
+            gen_velocity = gen_velocity / gen_points
+
+        vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
+        #print("gen velocity", gen_velocity)
+        #print("style velocity", self.style_velocity)
+        #print("The actual vel loss is: ", vel_loss)
+
+
         # End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
             pos_loss = np.mean((np.asarray(self.generated_motion[-1]) / self.robot_threshold - self.content_motion[
@@ -114,8 +135,6 @@ class ae_env():
             ## dtw ##
             # print(self.generated_motion)
             # print(self.content_motion)
-            alignment = dtw(self.generated_motion, self.content_motion, keep_internals=True)
-            pos_loss_cont = alignment.distance
             wq = warp(alignment, index_reference=False) #Find the warped trajectory
             warped_g = np.asarray(self.generated_motion)[wq]
             warped_g = np.append(warped_g, [np.asarray(self.generated_motion)[-1]], axis=0) #Add last point to warping (warp dont do this)
@@ -180,29 +199,10 @@ class ae_env():
 
             #IPython.embed()
 
-            # Velocity
-            gen_velocity = 0
-            gen_points = 0
-            for i in range(1, num_points):
-                vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]))
-                if vel_i != 0:  # If stopped not taken in account to compute avg vel
-                    gen_velocity = gen_velocity + vel_i
-                    gen_points += 1
-
-            if gen_points != 0:
-                gen_velocity = gen_velocity / gen_points
-
-            vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
-            # print("gen velocity", gen_velocity)
-            # print("style velocity", self.style_velocity)
-            # print("The actual vel loss is: ", vel_loss)
-
         else:
             pos_loss = 0
-            pos_loss_cont = 0
             cl = 0
             sl = 0
-            vel_loss = 0
             warped_traj = 0
 
         # Time step
