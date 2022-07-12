@@ -40,7 +40,7 @@ class ae_env():
         self.wc = 20 # Ref tabla loss 2
         self.ws = 0.2 # Ref tabla loss 0.02
         self.wp = 50 # End pos Ref tabla loss 100
-        self.wv = 0.05 # Ref tabla loss 0.1
+        self.wv = 0.1 # Ref tabla loss 0.1
         self.wpc = 0.05*(1e-5) # DTW pos Ref tabla loss 0.1*(1e-5)
 
         # Debug
@@ -115,7 +115,7 @@ class ae_env():
         gen_points = 0
         for i in range(1, num_points):
             vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]))
-            if vel_i != 0:  # If stopped not taken in account to compute avg vel
+            if abs(vel_i) < 0.5:  # 10Hz: If moving at vel lower than 10mm/s considered stopped and not taken in account
                 gen_velocity = gen_velocity + vel_i
                 gen_points += 1
 
@@ -209,8 +209,9 @@ class ae_env():
         n_timestep = num_points
 
         # Total reward
-        comp_reward = -(
-                    self.wc * n_timestep * cl + self.ws * n_timestep * sl + self.wp * pos_loss + self.wv * n_timestep * vel_loss + pos_loss_cont * n_timestep * self.wpc)
+        comp_reward = -(self.wc * n_timestep * cl + self.ws * n_timestep * sl +
+                        self.wp * pos_loss + self.wv * n_timestep * vel_loss +
+                        pos_loss_cont * n_timestep * self.wpc)
         # print("Velocity reward is: ", self.wv * n_timestep * vel_loss)
         # print("Content reward is: ", self.wc * n_timestep * cl)
         # print("Style reward is: ", self.ws * n_timestep * sl)
@@ -225,7 +226,9 @@ class ae_env():
         # if np.shape(self.generated_motion)[0] == self.input_size:
         #    print("totals losses are: ", self.tcl, self.tsl, self.tpl, self.tvl)
         #    print("WARNING: CONT POSS ALSO ADDED IN THIS VERSION")
-        return comp_reward, self.wc * n_timestep * cl, self.ws * n_timestep * sl, self.wv * n_timestep * vel_loss, n_timestep * self.wpc * pos_loss_cont, self.wp * pos_loss, warped_traj
+        return comp_reward, self.wc * n_timestep * cl, self.ws * n_timestep * sl, \
+               self.wv * n_timestep * vel_loss, n_timestep * self.wpc * pos_loss_cont, \
+               self.wp * pos_loss, warped_traj
 
     def step(self, step_action, content_motion):  # Step outpus a list for generated
         self.content_motion = np.asarray(content_motion)

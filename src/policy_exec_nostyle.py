@@ -37,7 +37,7 @@ total_episodes = 10
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 # actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/06-09-22/actor.h5")  # Actor
+actor_model = load_model("./NPST3-2-models/07-12-22/actor.h5")  # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/08-07-22/autoencoder.h5"
@@ -268,24 +268,23 @@ for ep in range(total_episodes):
     # Velocity scaled to a maximum of 0.8m/s
 
     for i in range(0, INPUT_SIZE - 1):
-        '''
+
         if np.linalg.norm(generated_motion_array[i] - generated_motion_array[i + 1]) != 0:
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2],
                     generated_motion_array[:, 2][i:i + 2], c=plt.cm.jet(
                     int(np.linalg.norm(generated_motion_array[i] - generated_motion_array[i + 1]) * 255 / 50)),
-                    linewidth=2)
+                    linewidth=4)
             # print("Generated: ", np.linalg.norm(generated_motion_array[i]-generated_motion_array[i-1]))
             # print("Content: ", np.linalg.norm(content_motion_array[i]-content_motion_array[i-1]))
             # print("Style: ", np.linalg.norm(style_motion_array[i]-style_motion_array[i-1]))
             # print("Velocity loss: ", vel_hist[i-1])
         '''
-
         if np.linalg.norm(content_motion_array[i] - content_motion_array[i + 1]) != 0:
             ax.plot(warped_traj_array[:, 0][i:i + 2], warped_traj_array[:, 1][i:i + 2],
                     warped_traj_array[:, 2][i:i + 2],
                     c=plt.cm.jet(int(np.linalg.norm(warped_traj_array[i] - warped_traj_array[i + 1]) * 255 / 50)),
                     linewidth=6)
-
+        '''
         if (np.linalg.norm(content_motion_array[i] - content_motion_array[i + 1]) != 0):
             ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2],
                     content_motion_array[:, 2][i:i + 2],
