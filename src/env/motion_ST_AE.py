@@ -113,16 +113,21 @@ class ae_env():
         #Compute vel loss
         gen_velocity = 0
         gen_points = 0
+        stopped = 0
         for i in range(1, num_points):
             vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]))
             if abs(vel_i) < 0.5:  # 10Hz: If moving at vel lower than 10mm/s considered stopped and not taken in account
                 gen_velocity = gen_velocity + vel_i
                 gen_points += 1
-
+                stopped +=1
         if gen_points != 0:
             gen_velocity = gen_velocity / gen_points
 
         vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
+
+        # If stopped all the time penalized
+        if stopped == (num_points-1):
+            vel_loss = 50
         #print("gen velocity", gen_velocity)
         #print("style velocity", self.style_velocity)
         #print("The actual vel loss is: ", vel_loss)
