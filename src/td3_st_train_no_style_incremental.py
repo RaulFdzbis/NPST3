@@ -35,7 +35,7 @@ INPUT_SIZE = 50
 robot_threshold = 300 # in mm
 upper_bound = 80 #Velocity limit is 150mm/s, which is equivalent to a max of ~87mm/s per dimension 
 lower_bound = -80
-total_episodes = 10000
+total_episodes = 12000
 noise_ep_bound = int(total_episodes * 0.95)
 q_noise = 0.002*robot_threshold
 action_noise = 0.02*robot_threshold
@@ -305,8 +305,8 @@ target_actor.set_weights(actor_model.get_weights())
 target_critic.set_weights(critic_model.get_weights())
 
 # Learning rate for critic and actor models
-critic_lr = 0.0000025
-actor_lr = 0.00000025
+critic_lr = 0.00005
+actor_lr = 0.000005
 
 # Optimizer for models
 critic_optimizer = tf.keras.optimizers.Adam(critic_lr)
