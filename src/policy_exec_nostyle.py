@@ -37,7 +37,7 @@ total_episodes = 10
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 # actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/07-12-22/actor.h5")  # Actor
+actor_model = load_model("./NPST3-2-models/07-19-22/actor.h5")  # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/08-07-22/autoencoder.h5"
@@ -145,6 +145,12 @@ for ep in range(total_episodes):
         tf_prev_state = [tf_content_motion, tf_generated_motion]
         action = policy(tf_prev_state)
         # print(action)
+        '''
+        if step <10:
+            action = [0,0,0]
+        else:
+            action = [15,15,15]
+        '''
 
         '''
         # Hard coded action
