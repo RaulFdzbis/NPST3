@@ -25,11 +25,17 @@ class ae_env():
         self.style_motion = np.asarray(style_motion)
         self.input_size = input_size
 
-        # Compute avg style velocity
+        # Compute avg style/content velocity
         self.style_velocity = 0
+        self.content_velocity = 0
+        content_size = 0
         for i in range(1, input_size):
             self.style_velocity = self.style_velocity + np.linalg.norm(self.style_motion[i - 1] - self.style_motion[i])
+            self.content_velocity = self.content_velocity + np.linalg.norm(self.content_motion[i-1]-self.content_motion[i])
+            if np.linalg.norm(self.content_motion[i-1]-self.content_motion[i]) != 0:
+                content_size +=1
         self.style_velocity = self.style_velocity / input_size
+        self.content_velocity = self.content_velocity / content_size
 
         self.generated_motion = []
         self.generated_motion.append(list(content_motion[0]))  # Init position
@@ -61,6 +67,21 @@ class ae_env():
     def reset(self, content_motion, style_motion):
         self.content_motion = np.asarray(content_motion)
         self.style_motion = np.asarray(style_motion)
+
+        # Compute avg style/content velocity
+        self.style_velocity = 0
+        self.content_velocity = 0
+        content_size = 0
+        for i in range(1, self.input_size):
+            self.style_velocity = self.style_velocity + np.linalg.norm(self.style_motion[i - 1] - self.style_motion[i])
+            self.content_velocity = self.content_velocity + np.linalg.norm(self.content_motion[i-1]-self.content_motion[i])
+            if np.linalg.norm(self.content_motion[i-1]-self.content_motion[i]) != 0:
+                content_size +=1
+        self.style_velocity = self.style_velocity / self.input_size
+        self.content_velocity = self.content_velocity / content_size
+        print("Velodidad del Content es: ", self.content_velocity)
+
+
         # Content and Style outputs
         input_content_motion = input_processing.input_generator(content_motion,self.input_size)  # To NN friendly array for input
         input_style_motion = input_processing.input_generator(style_motion,self.input_size)  # To NN friendly array for input
@@ -113,28 +134,30 @@ class ae_env():
         #Compute vel loss
         gen_velocity = 0
         gen_points = 0
-        stopped = 0
         for i in range(1, num_points):
             vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]))
-            if abs(vel_i) < 0.5:  # 10Hz: If moving at vel lower than 10mm/s considered stopped and not taken in account
+            if abs(vel_i) > (self.content_velocity)*0.01:  # 10Hz: If moving at vel lower than 10mm/s considered stopped and not taken in account
                 gen_velocity = gen_velocity + vel_i
                 gen_points += 1
-                stopped +=1
+            else:
+                print("PARADA!!")
         if gen_points != 0:
             gen_velocity = gen_velocity / gen_points
+        print("Gen velocity es:", gen_velocity)
 
         vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
+        #print("Vel loss:", vel_loss)
 
-        # If stopped all the time penalized
-        if stopped == (num_points-1):
-            vel_loss = 50
         #print("gen velocity", gen_velocity)
-        #print("style velocity", self.style_velocity)
+        print("style velocity", self.style_velocity)
         #print("The actual vel loss is: ", vel_loss)
 
 
         # End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
+            #print("Vel generated is:", gen_velocity)
+            #print("Vel style is:", self.style_velocity)
+            #print("Vel loss is:", vel_loss)
             pos_loss = np.mean((np.asarray(self.generated_motion[-1]) / self.robot_threshold - self.content_motion[
                 -1] / self.robot_threshold) ** 2)
             ## dtw ##
