@@ -79,7 +79,7 @@ class ae_env():
                 content_size +=1
         self.style_velocity = self.style_velocity / self.input_size
         self.content_velocity = self.content_velocity / content_size
-        print("Velodidad del Content es: ", self.content_velocity)
+        #print("Velodidad del Content es: ", self.content_velocity)
 
 
         # Content and Style outputs
@@ -143,13 +143,13 @@ class ae_env():
                 print("PARADA!!")
         if gen_points != 0:
             gen_velocity = gen_velocity / gen_points
-        print("Gen velocity es:", gen_velocity)
+        #print("Gen velocity es:", gen_velocity)
 
         vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
         #print("Vel loss:", vel_loss)
 
         #print("gen velocity", gen_velocity)
-        print("style velocity", self.style_velocity)
+        #print("style velocity", self.style_velocity)
         #print("The actual vel loss is: ", vel_loss)
 
 

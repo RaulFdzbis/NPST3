@@ -389,6 +389,7 @@ content_motion = []
 
 # Generate Content motion
 content_motion.append([0, 0, 0])
+content_motion = input_processing.input_generator(content_motion, INPUT_SIZE) #Make sure content motion input size
 
 # env
 env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
