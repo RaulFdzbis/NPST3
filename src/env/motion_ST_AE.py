@@ -136,7 +136,7 @@ class ae_env():
         gen_points = 0
         for i in range(1, num_points):
             vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]))
-            if abs(vel_i) > (self.content_velocity)*0.01:  # 10Hz: If moving at vel lower than 10mm/s considered stopped and not taken in account
+            if abs(vel_i) > (self.content_velocity)*0.1:  # 10Hz
                 gen_velocity = gen_velocity + vel_i
                 gen_points += 1
             else:
