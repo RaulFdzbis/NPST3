@@ -37,11 +37,11 @@ total_episodes = 10
 # Load model
 # Happy:1, Calm:2, Sad:3 and Angry:4
 # actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
-actor_model = load_model("./NPST3-2-models/07-19-22/actor.h5")  # Actor
+actor_model = load_model("./NPST3-2-models/09-08-22/actor.h5")  # Actor
 
 # Path to AE
 ae_path = "./../autoencoders/trained-models/08-07-22/autoencoder.h5"
-ae_path_2 = "./../autoencoders/trained-models/autoencoder.h5"
+#ae_path_2 = "./../autoencoders/trained-models/autoencoder.h5"
 
 style_data = []
 file_list = sorted(os.listdir("./styles"))
@@ -85,7 +85,7 @@ def policy(state):
 # env
 content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)  # Actually not used
 env = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path)
-env2 = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path_2)
+#env2 = motion_ST_AE.ae_env(content_motion, style_motion, INPUT_SIZE, ae_path_2)
 
 # content_motion = herm_traj_generator.generate_base_traj(INPUT_SIZE, robot_threshold, upper_bound)
 
@@ -106,7 +106,7 @@ for ep in range(total_episodes):
 
     # Init env and generated_motion
     generated_motion = env.reset(content_motion, style_motion)
-    generated_motion2 = env2.reset(content_motion, style_motion)
+    #generated_motion2 = env2.reset(content_motion, style_motion)
     episodic_reward = 0
 
     # Generate Content motion
@@ -193,8 +193,7 @@ for ep in range(total_episodes):
         # Receive state and reward from environment.
         generated_motion, reward, cl, sl, vel_loss, pos_loss_cont, pos_loss, done, warped_traj = env.step(action,
                                                                                                           content_motion)
-        generated_motion2, reward2, cl2, sl2, vel_loss2, pos_loss_cont2, pos_loss2, done2, warped_traj = env2.step(
-            action, content_motion)
+        #generated_motion2, reward2, cl2, sl2, vel_loss2, pos_loss_cont2, pos_loss2, done2, warped_traj = env2.step(action, content_motion)
 
         cl_hist.append(cl)
         sl_hist.append(sl)
@@ -202,11 +201,13 @@ for ep in range(total_episodes):
         poss_hist.append(pos_loss_cont)
         end_poss_hist.append(pos_loss)
 
+        '''
         cl_hist2.append(cl2)
         sl_hist2.append(sl2)
         vel_hist2.append(vel_loss2)
         poss_hist2.append(pos_loss_cont2)
         end_poss_hist2.append(pos_loss2)
+        '''
 
         # Step outpus a list for generated
         step += 1
@@ -235,11 +236,13 @@ for ep in range(total_episodes):
     print("The Poss loss is:", "{:,}".format(np.sum(poss_hist)))
     print("The EndPoss loss is:", "{:,}".format(np.sum(end_poss_hist)))
 
+    '''
     print("The CL2 loss is:", "{:,}".format(np.sum(cl_hist2)))
     print("The SL2 loss is:", "{:,}".format(np.sum(sl_hist2)))
     print("The Vel2 loss is:", "{:,}".format(np.sum(vel_hist2)))
     print("The Poss2 loss is:", "{:,}".format(np.sum(poss_hist2)))
     print("The EndPoss2 loss is:", "{:,}".format(np.sum(end_poss_hist2)))
+    '''
 
     # Do some plotting
 
@@ -252,6 +255,7 @@ for ep in range(total_episodes):
     plt.plot(np.linspace(1, 49, num=49), vel_hist, label="vel_loss")
     plt.legend(loc="upper left")
 
+    '''
     plt.figure()
     plt.plot(np.linspace(1, 49, num=49), cl_hist2, label="content_loss_2")
     plt.plot(np.linspace(1, 49, num=49), sl_hist2, label="style_loss_2")
@@ -260,6 +264,7 @@ for ep in range(total_episodes):
     plt.plot(np.linspace(1, 49, num=49), vel_hist2, label="vel_loss_2")
     plt.legend(loc="upper left")
     # plt.ylim(0, 0.2)
+    '''
 
     # Generated trajectory
     fig = plt.figure()

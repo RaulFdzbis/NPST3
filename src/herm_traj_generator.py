@@ -94,7 +94,6 @@ def generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_thresho
                     curve_ix -= np.sign(curve_ix)  # Reduce abs value of ix by 1
                     curve_iy -= np.sign(curve_iy)
                     curve_iz -= np.sign(curve_iz)
-                # print(ix,iy,iz)
                 tmp_point = [x + y for x, y in zip(traj_escaled[-1], [curve_ix, curve_iy, curve_iz])] # Add scaled increment
                 traj_escaled.append(np.clip(tmp_point, -robot_threshold, robot_threshold))
             else:
@@ -106,7 +105,6 @@ def generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_thresho
                     curve_ix -= np.sign(curve_ix)  # Reduce abs value of ix by 1
                     curve_iy -= np.sign(curve_iy)
                     curve_iz -= np.sign(curve_iz)
-                # print(ix,iy,iz)
                 tmp_point = [x + y for x, y in zip(traj_escaled[-1], [curve_ix, curve_iy, curve_iz])] # Add scaled increment
                 traj_escaled.append(np.clip(tmp_point, -robot_threshold, robot_threshold))
                 #traj_escaled.append(traj[-1])
@@ -159,6 +157,7 @@ def generate_hermitian_traj(p, v, t_values, traj_type, input_size, robot_thresho
 def generate_base_traj(input_size, robot_threshold, vel_threshold):
     # Scale hermitian velocity >1 angry. 1 means a smooth trajectory.
     v_p = random.random()
+    #v_p=0.9 #Manual setting
     #print("RANDOM IS: ", v_p)
     if v_p < 0.2:  # 20% of times we have a slow velocity scale
         scale_v = 0.5
@@ -218,7 +217,6 @@ def generate_base_traj(input_size, robot_threshold, vel_threshold):
     v.append([np.random.normal(ix_vel_scaled / 2, abs(ix_vel_scaled * 0.2)),
               np.random.normal(iy_vel_scaled / 2, abs(iy_vel_scaled * 0.2)),
               np.random.normal(iz_vel_scaled / 2, abs(iz_vel_scaled * 0.2))])  # Tangent velocity
-    #print("El array de velocidades es:", v)
 
     t_values = []
     total_tpoints = 0

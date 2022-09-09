@@ -47,7 +47,7 @@ class ae_env():
         self.ws = 0.2 # Ref tabla loss 0.02
         self.wp = 50 # End pos Ref tabla loss 100
         self.wv = 0.1 # Ref tabla loss 0.1
-        self.wpc = 0.05*(1e-5) # DTW pos Ref tabla loss 0.1*(1e-5)
+        self.wpc = 0.05*(1e-4) # DTW pos Ref tabla loss 0.1*(1e-5)
 
         # Debug
         self.tcl = 0
@@ -79,7 +79,6 @@ class ae_env():
                 content_size +=1
         self.style_velocity = self.style_velocity / self.input_size
         self.content_velocity = self.content_velocity / content_size
-        #print("Velodidad del Content es: ", self.content_velocity)
 
 
         # Content and Style outputs
@@ -135,34 +134,24 @@ class ae_env():
         gen_velocity = 0
         gen_points = 0
         for i in range(1, num_points):
+            #print("Num points: ", i)
             vel_i = np.linalg.norm(np.asarray(self.generated_motion[i]) - np.asarray(self.generated_motion[i - 1]))
-            if abs(vel_i) > (self.content_velocity)*0.1:  # 10Hz
+            if abs(vel_i) > (self.style_velocity)*0.1:  # 10Hz
                 gen_velocity = gen_velocity + vel_i
                 gen_points += 1
             else:
                 print("PARADA!!")
-        if gen_points != 0:
+        #IPython.embed()
+        if gen_points != 0: # If not stopped all the time
             gen_velocity = gen_velocity / gen_points
-        #print("Gen velocity es:", gen_velocity)
 
         vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
-        #print("Vel loss:", vel_loss)
-
-        #print("gen velocity", gen_velocity)
-        #print("style velocity", self.style_velocity)
-        #print("The actual vel loss is: ", vel_loss)
-
 
         # End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
-            #print("Vel generated is:", gen_velocity)
-            #print("Vel style is:", self.style_velocity)
-            #print("Vel loss is:", vel_loss)
             pos_loss = np.mean((np.asarray(self.generated_motion[-1]) / self.robot_threshold - self.content_motion[
                 -1] / self.robot_threshold) ** 2)
             ## dtw ##
-            # print(self.generated_motion)
-            # print(self.content_motion)
             wq = warp(alignment, index_reference=False) #Find the warped trajectory
             warped_g = np.asarray(self.generated_motion)[wq]
             warped_g = np.append(warped_g, [np.asarray(self.generated_motion)[-1]], axis=0) #Add last point to warping (warp dont do this)
@@ -181,11 +170,7 @@ class ae_env():
                     warped_iy -= np.sign(warped_iy)
                     warped_iz -= np.sign(warped_iz)
                 warped_traj.append([x + y for x, y in zip(warped_traj[index], [warped_ix, warped_iy, warped_iz])])
-                #print(traj[index])
 
-
-            #print("Trajectory is: ", self.content_motion)
-            #print("Trajectory generated warped is: ", warped_g)
 
             input_generated_motion_content = input_processing.input_generator(warped_traj, self.input_size)  # generated_motion to NN friendly array for input
             input_generated_motion_style = input_processing.input_generator(self.generated_motion, self.input_size)
