@@ -46,8 +46,8 @@ class ae_env():
         self.wc = 20 # Ref tabla loss 2
         self.ws = 0.2 # Ref tabla loss 0.02
         self.wp = 50 # End pos Ref tabla loss 100
-        self.wv = 0.1 # Ref tabla loss 0.1
-        self.wpc = 0.05*(1e-4) # DTW pos Ref tabla loss 0.1*(1e-5)
+        self.wv = 0.0001 # Ref tabla loss 0.1
+        self.wpc = 0.005*(1e-6) # DTW pos Ref tabla loss 0.1*(1e-5)
 
         # Debug
         self.tcl = 0
@@ -147,75 +147,64 @@ class ae_env():
 
         vel_loss = abs(gen_velocity - self.style_velocity) / self.robot_threshold
 
+        ## dtw compute Content and Style loss ##
+        wq = warp(alignment, index_reference=False)  # Find the warped trajectory
+        warped_g = np.asarray(self.generated_motion)[wq]
+        warped_g = np.append(warped_g, [np.asarray(self.generated_motion)[-1]],
+                             axis=0)  # Add last point to warping (warp dont do this)
+        if (np.shape(warped_g)[0] > 50):
+            print("ERROR WARPED TRAJECTORY TOO LONG")
+        warped_traj = [[0, 0, 0]]
+        for index in range(np.shape(warped_g)[0] - 1):
+            warped_ix = warped_g[index + 1][0] - warped_traj[index][0]
+            warped_iy = warped_g[index + 1][1] - warped_traj[index][1]
+            warped_iz = warped_g[index + 1][2] - warped_traj[index][2]
+            # print("Incrementos: ", warped_ix, warped_iy, warped_iz)
+            while (abs(warped_ix) > self.vel_threshold or
+                   abs(warped_iy) > self.vel_threshold or
+                   abs(warped_iz) > self.vel_threshold):  # Make sure not outside the max vel
+                warped_ix -= np.sign(warped_ix)  # Reduce abs value of ix by 1
+                warped_iy -= np.sign(warped_iy)
+                warped_iz -= np.sign(warped_iz)
+            warped_traj.append([x + y for x, y in zip(warped_traj[index], [warped_ix, warped_iy, warped_iz])])
+
+        input_generated_motion_content = input_processing.input_generator(warped_traj,
+                                                                          self.input_size)  # generated_motion to NN friendly array for input
+        input_generated_motion_style = input_processing.input_generator(self.generated_motion, self.input_size)
+        # Plot for debug purposes
+        # fig = plt.figure()
+        # ax = fig.add_subplot(1, 3, 1, projection='3d')
+        # ax.plot(self.content_motion[:, 0], self.content_motion[:, 1], self.content_motion[:, 2], label="content")
+        #
+        # ax.plot(generated_motion_arr[:, 0][alignment.index1], generated_motion_arr[:, 1][alignment.index1], generated_motion_arr[:, 2][alignment.index1], label="content")
+        # plt.show()
+
+        # Generated outputs
+        input_generated_motion_content = np.expand_dims(input_generated_motion_content, axis=0)
+        input_generated_motion_style = np.expand_dims(input_generated_motion_style, axis=0)
+
+        # print("Input generated motion is: ", input_generated_motion)
+        generated_outputs_content = self.ae_outputs([input_generated_motion_content])
+        generated_outputs_style = self.ae_outputs([input_generated_motion_style])
+
+        # Generated raw outputs (No warp)
+        # input_generated_motion_2 = input_processing.input_generator(self.generated_motion, self.input_size)  # generated_motion to NN friendly array for input
+        # input_generated_motion_2 = np.expand_dims(input_generated_motion_2, axis=0)
+        # generated_outputs_2 = self.ae_outputs([input_generated_motion_2])
+
+        # cl and sl
+        cl = self.content_loss(generated_outputs_content)
+        sl = self.style_loss(generated_outputs_style)
+
         # End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
             pos_loss = np.mean((np.asarray(self.generated_motion[-1]) / self.robot_threshold - self.content_motion[
                 -1] / self.robot_threshold) ** 2)
-            ## dtw ##
-            wq = warp(alignment, index_reference=False) #Find the warped trajectory
-            warped_g = np.asarray(self.generated_motion)[wq]
-            warped_g = np.append(warped_g, [np.asarray(self.generated_motion)[-1]], axis=0) #Add last point to warping (warp dont do this)
-            if (np.shape(warped_g)[0]>50):
-                print("ERROR WARPED TRAJECTORY TOO LONG")
-            warped_traj = [[0,0,0]]
-            for index in range(np.shape(warped_g)[0]-1):
-                warped_ix = warped_g[index+1][0] - warped_traj[index][0]
-                warped_iy = warped_g[index+1][1] - warped_traj[index][1]
-                warped_iz = warped_g[index+1][2] - warped_traj[index][2]
-                #print("Incrementos: ", warped_ix, warped_iy, warped_iz)
-                while (abs(warped_ix) > self.vel_threshold or
-                       abs(warped_iy) > self.vel_threshold or
-                       abs(warped_iz) > self.vel_threshold):  # Make sure not outside the max vel
-                    warped_ix -= np.sign(warped_ix)  # Reduce abs value of ix by 1
-                    warped_iy -= np.sign(warped_iy)
-                    warped_iz -= np.sign(warped_iz)
-                warped_traj.append([x + y for x, y in zip(warped_traj[index], [warped_ix, warped_iy, warped_iz])])
-
-
-            input_generated_motion_content = input_processing.input_generator(warped_traj, self.input_size)  # generated_motion to NN friendly array for input
-            input_generated_motion_style = input_processing.input_generator(self.generated_motion, self.input_size)
-            #Plot for debug purposes
-            # fig = plt.figure()
-            # ax = fig.add_subplot(1, 3, 1, projection='3d')
-            # ax.plot(self.content_motion[:, 0], self.content_motion[:, 1], self.content_motion[:, 2], label="content")
-            #
-            # ax.plot(generated_motion_arr[:, 0][alignment.index1], generated_motion_arr[:, 1][alignment.index1], generated_motion_arr[:, 2][alignment.index1], label="content")
-            # plt.show()
-
-            # Generated outputs
-            input_generated_motion_content = np.expand_dims(input_generated_motion_content, axis=0)
-            input_generated_motion_style = np.expand_dims(input_generated_motion_style, axis=0)
-
-            #print("Input generated motion is: ", input_generated_motion)
-            generated_outputs_content = self.ae_outputs([input_generated_motion_content])
-            generated_outputs_style = self.ae_outputs([input_generated_motion_style])
-            
-
-            # Generated raw outputs (No warp)
-            #input_generated_motion_2 = input_processing.input_generator(self.generated_motion, self.input_size)  # generated_motion to NN friendly array for input
-            #input_generated_motion_2 = np.expand_dims(input_generated_motion_2, axis=0)
-            #generated_outputs_2 = self.ae_outputs([input_generated_motion_2])
-
-            # cl and sl
-            cl = self.content_loss(generated_outputs_content)
-            sl = self.style_loss(generated_outputs_style)
-            #print("\nContent loss DTW:", self.wc * num_points * cl)
-            #print("Style loss DTW:", self.ws * num_points * sl)
-
-            # cl and sl (No warp)
-            #cl_2 = self.content_loss(generated_outputs_2)
-            #sl_2 = self.style_loss(generated_outputs_2)
-            #print("Content loss:", self.wc * num_points * cl_2)
-            #print("Style loss:", self.ws * num_points * sl_2)
-
-
 
             #IPython.embed()
 
         else:
             pos_loss = 0
-            cl = 0
-            sl = 0
             warped_traj = 0
 
         # Time step
