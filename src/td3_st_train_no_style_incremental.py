@@ -23,6 +23,7 @@ import random
 import argparse
 import herm_traj_generator
 
+
 # Arguments
 parser = argparse.ArgumentParser(description='Select Style. 0: Happy; 1: Calm, 2: Sad, 3: Angry.')
 parser.add_argument('--style', type=int, default=0)
