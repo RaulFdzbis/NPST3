@@ -44,11 +44,11 @@ class ae_env():
         self.robot_threshold = robot_threshold
         self.vel_threshold = robot_threshold*0.1
         # Style Transfer and constraints weights
-        self.wc = 20 # Ref tabla loss 2
-        self.ws = 0.02 # Ref tabla loss 0.02
-        self.wp = 50 # End pos Ref tabla loss 100
-        self.wv = 0.0001 # Ref tabla loss 0.1
-        self.wpc = 0.005*(1e-6) # DTW pos Ref tabla loss 0.1*(1e-5)
+        self.wc = 0 #20 # Ref tabla loss 2
+        self.ws = 0 #0.02 # Ref tabla loss 0.02
+        self.wp = 0 #50 # End pos Ref tabla loss 100
+        self.wv = 0 #0.0001 # Ref tabla loss 0.1
+        self.wpc = 0.1*(1e-5) #0.005*(1e-6) # DTW pos Ref tabla loss 0.1*(1e-5)
 
         # Debug
         self.tcl = 0
