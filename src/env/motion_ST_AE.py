@@ -196,6 +196,18 @@ class ae_env():
         # cl and sl
         cl = self.content_loss(generated_outputs_content)
         sl = self.style_loss(generated_outputs_style)
+        
+        
+        #Position Constraint (Overwrites DTW constraint)
+        pos_loss_cont = np.mean((np.asarray(self.generated_motion[num_points - 1]) / self.robot_threshold - self.content_motion[num_points - 1] / self.robot_threshold) ** 2)
+
+        if np.shape(self.generated_motion)[0] == self.input_size:
+           pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
+           # print((np.asarray(self.generated_motion[-1])))
+           # print(self.content_motion[-1])
+
+        else:
+           pos_loss = 0
 
         # End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
