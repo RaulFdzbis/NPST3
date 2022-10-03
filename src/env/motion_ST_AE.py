@@ -48,7 +48,7 @@ class ae_env():
         self.ws = 0 #0.02 # Ref tabla loss 0.02
         self.wp = 0 #50 # End pos Ref tabla loss 100
         self.wv = 0 #0.0001 # Ref tabla loss 0.1
-        self.wpc = 0.1*(1e-5) #0.005*(1e-6) # DTW pos Ref tabla loss 0.1*(1e-5)
+        self.wpc = 0.01 #0.005*(1e-6) # DTW pos Ref tabla loss 0.1*(1e-5)
 
         # Debug
         self.tcl = 0
@@ -200,14 +200,6 @@ class ae_env():
         
         #Position Constraint (Overwrites DTW constraint)
         pos_loss_cont = np.mean((np.asarray(self.generated_motion[num_points - 1]) / self.robot_threshold - self.content_motion[num_points - 1] / self.robot_threshold) ** 2)
-
-        if np.shape(self.generated_motion)[0] == self.input_size:
-           pos_loss = np.mean((np.asarray(self.generated_motion[-1])/ self.robot_threshold - self.content_motion[-1]/ self.robot_threshold) ** 2)
-           # print((np.asarray(self.generated_motion[-1])))
-           # print(self.content_motion[-1])
-
-        else:
-           pos_loss = 0
 
         # End position constraint
         if np.shape(self.generated_motion)[0] == self.input_size:
