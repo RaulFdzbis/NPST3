@@ -1,0 +1,4 @@
+[[01;34mINFO[00m] |[01;32myarp.os.Port[00m|[33m/tmp/port/1[00m| Port /tmp/port/1 active at tcp://2.2.2.51:10020/
+[[01;34mINFO[00m] |[01;34myarp.os.impl.PortCoreInputUnit[00m|[33m/tmp/port/1[00m| Receiving input from /teo/bcc/state:o to /tmp/port/1 using tcp
+Interrupting...
+[[01;34mINFO[00m] |[01;34myarp.os.impl.PortCoreInputUnit[00m|[33m/tmp/port/1[00m| Removing input from /teo/bcc/state:o to /tmp/port/1
