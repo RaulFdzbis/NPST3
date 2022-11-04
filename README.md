@@ -5,10 +5,12 @@ Implementation of Neural Policy Style Transfer with Twin-Delayed DDPG (NPST3) fr
 The algorithm can be executed with the `policy_exec_nostyle_incremental.py` script. Each numbered trained model in the repo corresponds to a different Style.
 
 	Trained Styles
-	1: Happy
-	2: Calm
-	3: Sad
-	4: Angry
+	0: Happy
+	1: Calm
+	2: Sad
+	3: Angry
+	
+For example: `python policy_exec_nostyle_incremental.py --style 0` for the happy style.
 
 ## Installation
 
