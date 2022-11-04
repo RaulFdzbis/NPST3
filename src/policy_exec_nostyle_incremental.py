@@ -36,7 +36,7 @@ lower_bound = -0.1 * robot_threshold
 total_episodes = 1
 
 # Load model
-# Happy:1, Calm:2, Sad:3 and Angry:4
+# Happy:0, Calm:1, Sad:2 and Angry:3
 actor_model = load_model("./definitive-models/"+str(args.style+1)+"/actor.h5") # Actor
 
 # Path to AE
@@ -165,6 +165,11 @@ for ep in range(total_episodes):
         if i < 25:
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2], generated_motion_array[:, 2][i:i + 2], 'b', linewidth=2)
         else:
+            # The last part of the trajectory is in red
             ax.plot(generated_motion_array[:, 0][i:i + 2], generated_motion_array[:, 1][i:i + 2],
                    generated_motion_array[:, 2][i:i + 2], 'r', linewidth=2)
+
+    for i in range(30):
+        ax.plot(content_motion_array[:, 0][i:i + 2], content_motion_array[:, 1][i:i + 2], content_motion_array[:, 2][i:i + 2], 'y', linewidth=2)
+        
     plt.show()
